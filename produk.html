@@ -7,12 +7,12 @@
 <meta name="description" content="Lihat detail konsep source code, teknologi, rencana fitur, dan status ketersediaan di Anshel Market.">
 <title>Detail Produk — Anshel Market</title>
 <link rel="stylesheet" href="/produk.css">
-</head>
+<style>.collection-link{text-align:center;margin:12px 0 0;font-size:12px;font-weight:750;color:#2b5fb8}.collection-link a:hover{text-decoration:underline}</style></head>
 <body>
 <header class="site-header">
   <div class="wrap header-inner">
     <a class="brand" href="/" aria-label="Anshel Market — ke katalog">anshel<span>.</span>market</a>
-    <nav class="global-nav" aria-label="Navigasi utama"><a href="/">Katalog</a><a href="/tentang.html">Tentang</a><a href="/kebijakan.html">Kebijakan</a></nav>
+    <nav class="global-nav" aria-label="Navigasi utama"><a href="/">Katalog</a><a href="/tersimpan.html">Tersimpan</a><a href="/tentang.html">Tentang</a><a href="/kebijakan.html">Kebijakan</a></nav>
     <span class="nav-fill"></span><a class="nav-link" href="/">← Semua produk</a>
   </div>
 </header>
@@ -20,7 +20,7 @@
 <main id="app" class="wrap" aria-live="polite">
   <div class="not-found"><h1>Memuat detail produk…</h1><p>Informasi katalog akan tampil di sini.</p></div>
 </main>
-<footer class="bottom-bar"><div class="wrap"><a class="brand" href="/">anshel<span>.</span>market</a><div class="footer-links"><a href="/tentang.html">Tentang</a><a href="/kebijakan.html">Kebijakan & lisensi</a><a href="/">Katalog</a></div><span>© <span id="year"></span> Anshel Market</span></div></footer>
+<footer class="bottom-bar"><div class="wrap"><a class="brand" href="/">anshel<span>.</span>market</a><div class="footer-links"><a href="/tersimpan.html">Tersimpan</a><a href="/tentang.html">Tentang</a><a href="/kebijakan.html">Kebijakan & lisensi</a><a href="/">Katalog</a></div><span>© <span id="year"></span> Anshel Market</span></div></footer>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/catalog-data.js"></script>
 <script>
@@ -52,7 +52,7 @@
    '<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Katalog</a><span>/</span><a href="/?kategori='+encodeURIComponent(p.category)+'">'+safeText(p.category)+'</a><span>/</span><span aria-current="page">'+safeText(p.name)+'</span></nav>'+
    '<div class="product-hero">'+
       '<div class="showcase"><div class="gallery-frame"><img src="'+img(p)+'" alt="Ilustrasi konsep antarmuka '+safeText(p.name)+'" width="1200" height="780"><div class="gallery-caption"><span class="gallery-label"><span class="gallery-dot"></span><strong>Pratinjau visual</strong></span><span>Bukan demo aplikasi</span></div></div><div class="under-gallery"><strong>1 gambar konsep</strong><span>Preview untuk menggambarkan arah desain, bukan fitur yang telah selesai.</span></div></div>'+
-      '<section class="summary" aria-label="Informasi '+safeText(p.name)+'"><span class="pill">Konsep · Belum dijual</span><div class="subtype">'+safeText(p.category)+' / Source code</div><h1>'+safeText(p.name)+'</h1><p class="intro">'+safeText(p.desc)+'</p><div class="divider"></div><div class="price-caption">Estimasi harga · belum final</div><div class="price">'+money(p.price)+'</div><p class="price-disclaimer">Harga hanya ilustrasi, belum merupakan penawaran jual.</p><div class="actions"><a class="btn btn-primary" href="/">← Kembali ke katalog</a><button class="btn icon-only" id="favorite" type="button" aria-pressed="false" title="Simpan produk" aria-label="Simpan produk">♡</button><button class="btn icon-only" id="share" type="button" title="Salin tautan" aria-label="Salin tautan produk">↗</button></div><div class="note"><span aria-hidden="true">ⓘ</span><span><b>Belum dapat dibeli.</b> Source code, unduhan, demo, dukungan, dan lisensi final belum tersedia. Detail akan diperbarui jika produk dirilis.</span></div></section>'+
+      '<section class="summary" aria-label="Informasi '+safeText(p.name)+'"><span class="pill">Konsep · Belum dijual</span><div class="subtype">'+safeText(p.category)+' / Source code</div><h1>'+safeText(p.name)+'</h1><p class="intro">'+safeText(p.desc)+'</p><div class="divider"></div><div class="price-caption">Estimasi harga · belum final</div><div class="price">'+money(p.price)+'</div><p class="price-disclaimer">Harga hanya ilustrasi, belum merupakan penawaran jual.</p><div class="actions"><a class="btn btn-primary" href="/">← Kembali ke katalog</a><button class="btn icon-only" id="favorite" type="button" aria-pressed="false" title="Simpan produk" aria-label="Simpan produk">♡</button><button class="btn icon-only" id="share" type="button" title="Salin tautan" aria-label="Salin tautan produk">↗</button></div><p class="collection-link"><a href="/tersimpan.html">Lihat koleksi produk tersimpan →</a></p><div class="note"><span aria-hidden="true">ⓘ</span><span><b>Belum dapat dibeli.</b> Source code, unduhan, demo, dukungan, dan lisensi final belum tersedia. Detail akan diperbarui jika produk dirilis.</span></div></section>'+
    '</div>'+
    '<div class="section-shell"><section class="info-card" id="fitur"><h2 class="section-head">Rencana cakupan fitur</h2><p class="section-copy">Daftar berikut adalah rancangan fitur yang mungkin dicakup, bukan daftar file atau fitur yang sudah diselesaikan.</p><ul class="planned-list">'+features+'</ul></section>'+
    '<section class="info-card"><h2 class="section-head">Informasi teknis</h2><dl class="spec-list"><div><dt>Kategori</dt><dd>'+safeText(p.category)+'</dd></div><div><dt>Teknologi</dt><dd>'+safeText(p.stack)+'</dd></div><div><dt>Status</dt><dd>Konsep / Pratinjau</dd></div><div><dt>File & demo</dt><dd>Belum tersedia</dd></div><div><dt>Lisensi</dt><dd>Belum diterbitkan</dd></div></dl></section></div>'+
