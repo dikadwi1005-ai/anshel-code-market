@@ -46,6 +46,34 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
  assert.equal(await p.locator('.product').count(),2);
  await p.goto(base+'/tersimpan.html',{waitUntil:'networkidle'});
  assert.equal(await p.locator('.saved-empty h2').innerText(),'Belum ada produk tersimpan.');
+ // Recently viewed products remain local to this browser and can be cleared.
+ await p.goto(base+'/produk.html?id=2',{waitUntil:'networkidle'});
+ await p.goto(base+'/',{waitUntil:'networkidle'});
+ assert.equal(await p.locator('#recentSection').evaluate(el=>el.hidden),false);
+ assert.equal(await p.locator('.recent-item strong').first().innerText(),'Business Dashboard UI');
+ await p.locator('#clearRecent').click();
+ assert.equal(await p.locator('#recentSection').evaluate(el=>el.hidden),true);
+ // Shared filter links hydrate the controls and can be reset.
+ await p.goto(base+'/?q=booking&kategori=Website&urutkan=low',{waitUntil:'networkidle'});
+ assert.equal(await p.locator('.product').count(),1);
+ assert.equal(await p.locator('#search').inputValue(),'booking');
+ assert.equal(await p.locator('#sort').inputValue(),'low');
+ await p.locator('#search').fill('this-does-not-exist-in-the-catalog');
+ assert.equal(await p.locator('.result-empty strong').innerText(),'Tidak ada produk yang cocok.');
+ await p.locator('[data-reset-list]').click();
+ assert.equal(await p.locator('.product').count(),6);
+ assert.ok(!new URL(p.url()).searchParams.has('q'));
+ // Browser history restores category selection without a page reload.
+ await p.locator('#search').fill('dashboard');
+ await p.waitForFunction(()=>new URL(location.href).searchParams.get('q')==='dashboard');
+ await p.locator('[data-category="Dashboard"]').click();
+ assert.equal(await p.locator('[data-category="Dashboard"]').getAttribute('aria-pressed'),'true');
+ await p.goBack({waitUntil:'domcontentloaded'});
+ assert.equal(await p.locator('[data-category="Dashboard"]').getAttribute('aria-pressed'),'false');
+ assert.equal(await p.locator('#search').inputValue(),'dashboard');
+ await p.goto(base+'/',{waitUntil:'networkidle'});
+ await p.keyboard.press('/');
+ assert.ok(await p.locator('#search').evaluate(el=>el===document.activeElement));
  await browser.close();
- console.log('PASS: '+total+' viewport flows + deep links + category filters');
+ console.log('PASS: '+total+' viewport flows + deep links, URL filters, recently viewed, keyboard search');
 })().catch(err=>{console.error(err);process.exitCode=1});
