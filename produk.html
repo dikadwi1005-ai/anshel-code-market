@@ -43,6 +43,7 @@
     app.innerHTML='<section class="not-found"><span class="pill">404 / Produk</span><h1>Produk tidak ditemukan.</h1><p>Produk dengan alamat tersebut tidak ada di katalog pratinjau.</p><a class="btn btn-primary" href="/">Kembali ke katalog</a></section>';
     return;
   }
+  try{const previous=JSON.parse(localStorage.getItem("anshel-recent")||"[]");const ids=Array.isArray(previous)?previous.filter(id=>Number.isInteger(id)&&products.some(item=>item.id===id)):[];localStorage.setItem("anshel-recent",JSON.stringify([p.id,...ids.filter(id=>id!==p.id)].slice(0,8)))}catch{}
   document.title=p.name+" — Anshel Market";
   document.querySelector('meta[name="description"]').content="Detail konsep "+p.name+": "+p.desc+" Ketersediaan: belum dijual.";
   let saved=new Set();try{saved=new Set(JSON.parse(localStorage.getItem("anshel-favorites")||"[]"))}catch{}
