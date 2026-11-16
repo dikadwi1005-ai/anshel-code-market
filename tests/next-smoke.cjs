@@ -6,7 +6,6 @@ const base=(process.env.BASE_URL||"http://127.0.0.1:4173").replace(/\/$/,"");
 for(const [label,width,height] of [["desktop",1440,900],["tablet",768,1024],["mobile",390,844],["small",320,640]]){
  const page=await browser.newPage({viewport:{width,height}});const errors=[];page.on("pageerror",e=>errors.push(e.message));
  const home=await page.goto(base+"/",{waitUntil:"domcontentloaded",timeout:45000});assert.equal(home.status(),200);
- await page.waitForFunction(()=>!document.querySelector(".loading")&&document.querySelector(".smallNotice")?.textContent?.includes("Menghubungkan")===false,{timeout:16000}).catch(()=>{});
  // Regression guard: the storefront is catalog-first, not a generic marketing hero.
  await page.locator(".catalogPageHeader h1").waitFor({state:"visible",timeout:12000});
  assert.equal(await page.locator(".catalogPageHeader h1").innerText(),"Source Code & Template",label+" catalog-first heading");
