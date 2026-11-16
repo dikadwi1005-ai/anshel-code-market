@@ -2,16 +2,13 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import ProductCard from "./product-card";
-import {categories} from "@/lib/seed";
-import type {Product} from "@/lib/types";
-import {loadMarketConfig,initializeMarket,getPublicProducts} from "@/lib/firebase";
+import {categories} from "@/lib/categories";
+import {usePublicProducts} from "@/lib/use-public-products";
 
-type Mode="loading"|"firestore"|"error";
 function storageSet(name:string,list:string[],session=false){try{(session?sessionStorage:localStorage).setItem(name,JSON.stringify(list))}catch{}}
 function storageGet(name:string,session=false):string[]{try{const rows=JSON.parse((session?sessionStorage:localStorage).getItem(name)||"[]");return Array.isArray(rows)?rows.map((v:string|number)=>typeof v==="number"?`concept-${v}`:String(v)):[]}catch{return []}}
 export default function CatalogClient(){
- const [mode,setMode]=useState<Mode>("loading");
- const [items,setItems]=useState<Product[]>([]);
+ const {items,mode}=usePublicProducts();
  const [search,setSearch]=useState("");
  const [category,setCategory]=useState("");
  const [sort,setSort]=useState("default");
@@ -20,11 +17,6 @@ export default function CatalogClient(){
  const [recent,setRecent]=useState<string[]>([]);
  useEffect(()=>{setFavorites(storageGet("anshel-favorites"));setCompared(storageGet("anshel-compare",true));setRecent(storageGet("anshel-recent"));
    const params=new URLSearchParams(location.search);setSearch(params.get("q")||"");setCategory(params.get("kategori")||"");setSort(params.get("urutkan")||"default");
-   let active=true;
-   (async()=>{try{const config=await loadMarketConfig();if(!config.configured||!config.firebase)throw new Error("Firebase catalog is not configured.");
-     const {db}=initializeMarket(config.firebase);const rows=await getPublicProducts(db);if(active){setItems(rows);setMode("firestore")}
-   }catch(err){if(active){console.error("Cannot load catalog from Firebase",err);setItems([]);setMode("error")}}})();
-   return()=>{active=false};
  },[]);
  const toggleSaved=useCallback((id:string)=>{setFavorites(previous=>{const next=previous.includes(id)?previous.filter(x=>x!==id):[...previous,id];storageSet("anshel-favorites",next);return next})},[]);
  const toggleCompared=useCallback((id:string)=>{setCompared(previous=>{const next=previous.includes(id)?previous.filter(x=>x!==id):[...previous,id].slice(0,3);storageSet("anshel-compare",next,true);return next})},[]);
@@ -46,10 +38,10 @@ export default function CatalogClient(){
   <section className="catalogBody" id="catalog"><div className="catalogTitleRow"><div><h2>Semua produk</h2><p>Temukan desain dan komponen yang sesuai kebutuhanmu.</p></div><span className="catalogCount">{mode==="loading"?"Memuat…":realCount+" produk"}</span></div>
   <div className="catalogTools"><input id="search" className="control catalogSearch" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari source code, produk, teknologi…" aria-label="Cari produk"/><select className="control catalogSelect" value={sort} onChange={e=>setSort(e.target.value)} aria-label="Urutkan produk"><option value="default">Terbaru</option><option value="low">Harga terendah</option><option value="high">Harga tertinggi</option><option value="az">Nama A–Z</option></select><span className="catalogCount">{mode==="loading"?"Memuat…":filtered.length+" dari "+realCount+" pratinjau"}</span></div>
   {mode==="error"&&<p className="noticeAmber" role="alert">Produk belum dapat dimuat saat ini. Silakan coba kembali nanti.</p>}
-  {mode==="loading"?<div className="loading" role="status">Mengambil produk dari Firestore…</div>:<div className="productGrid" data-testid="catalog-grid">{filtered.length?filtered.map(p=><ProductCard key={p.id} product={p} saved={favorites.includes(p.id)} onSave={toggleSaved} compared={compared.includes(p.id)} onCompare={toggleCompared}/>):<div className="emptyState"><h3>{items.length?"Tidak ada produk yang cocok.":mode==="error"?"Katalog belum tersedia.":"Belum ada produk yang ditampilkan."}</h3><p>{items.length?"Coba ubah kata kunci atau kategori.":mode==="error"?"Silakan coba lagi nanti.":"Belum ada produk yang tersedia dalam katalog."}</p>{items.length>0&&<button type="button" className="button" onClick={()=>{setCategory("");setSearch("")}}>Reset filter</button>}</div>}</div>}
+  {mode==="loading"?<div className="loading" role="status">Memuat produk…</div>:<div className="productGrid" data-testid="catalog-grid">{filtered.length?filtered.map(p=><ProductCard key={p.id} product={p} saved={favorites.includes(p.id)} onSave={toggleSaved} compared={compared.includes(p.id)} onCompare={toggleCompared}/>):<div className="emptyState"><h3>{items.length?"Tidak ada produk yang cocok.":mode==="error"?"Katalog belum tersedia.":"Belum ada produk yang ditampilkan."}</h3><p>{items.length?"Coba ubah kata kunci atau kategori.":mode==="error"?"Silakan coba lagi nanti.":"Belum ada produk yang tersedia dalam katalog."}</p>{items.length>0&&<button type="button" className="button" onClick={()=>{setCategory("");setSearch("")}}>Reset filter</button>}</div>}</div>}
   <div className="utilityBar" style={{marginTop:17}}><Link className="button" href="/tersimpan">♡ Tersimpan ({favorites.length})</Link>{compared.length>=2&&<Link className="button" href={compareHref}>Bandingkan ({compared.length})</Link>}</div>
   </section></div>
-  {recent.length>0&&<section className="catalogSecondary"><h2 style={{fontSize:17,margin:"0 0 13px"}}>Terakhir dilihat</h2><div className="utilityBar">{recent.slice(0,4).map(id=>{const p=items.find(item=>item.id===id);return p?<Link key={id} className="button buttonQuiet" href={"/rilis?slug="+p.slug}>{p.name}</Link>:null})}<button className="button buttonMini" onClick={()=>{storageSet("anshel-recent",[]);setRecent([])}}>Hapus riwayat</button></div></section>}
+  {recent.some(id=>items.some(p=>p.id===id))&&<section className="catalogSecondary"><h2 style={{fontSize:17,margin:"0 0 13px"}}>Terakhir dilihat</h2><div className="utilityBar">{recent.slice(0,4).map(id=>{const p=items.find(item=>item.id===id);return p?<Link key={id} className="button buttonQuiet" href={"/rilis?slug="+p.slug}>{p.name}</Link>:null})}<button className="button buttonMini" onClick={()=>{storageSet("anshel-recent",[]);setRecent([])}}>Hapus riwayat</button></div></section>}
 
  </>;
 }
