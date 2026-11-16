@@ -74,6 +74,7 @@ async function mockPage(browser,width,height,{admin=true}={}){
   await page.locator('[name="price_idr"]').fill("250000");
   await page.locator("#saveProduct").click();
   await page.locator("#productDialog").waitFor({state:"hidden"});
+  await page.waitForFunction(()=>document.querySelector("#totalProducts").textContent==="2");
   assert.equal(await page.locator("#totalProducts").innerText(),"2");
   await page.locator('[data-edit="'+newId+'"]').click();
   await page.locator("#zipFile").setInputFiles({name:"test.zip",mimeType:"application/zip",buffer:Buffer.from("PK\x03\x04synthetic")});
@@ -84,6 +85,7 @@ async function mockPage(browser,width,height,{admin=true}={}){
   await page.locator('[name="status"]').selectOption("published");
   await page.locator("#saveProduct").click();
   await page.locator("#productDialog").waitFor({state:"hidden"});
+  await page.waitForFunction(()=>document.querySelector("#publishedProducts").textContent==="1");
   assert.equal(await page.locator("#publishedProducts").innerText(),"1");
   assert.equal(products.find(p=>p.id===newId).status,"published");
   await page.locator('[data-section="orders"]').click();
