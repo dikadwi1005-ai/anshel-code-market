@@ -239,6 +239,25 @@ dialog{width:calc(100% - 16px);max-height:calc(100dvh - 28px);border-radius:15px
 .product .card-actions button[data-id]{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.product{transition:none}.product:hover{transform:none}}
+
+/* Verified mobile layout fixes: prevent auto-placement and intrinsic-width cards */
+@media(max-width:720px){
+.bar{display:grid;grid-template-areas:"brand faq" "search search";grid-template-columns:minmax(0,1fr) auto;grid-auto-rows:auto;column-gap:12px;row-gap:12px;align-items:center}
+.bar .brand{grid-area:brand;min-width:0;width:auto;justify-self:start;white-space:nowrap}
+.bar .header-action{grid-area:faq;display:inline-flex;justify-self:end;width:auto;align-items:center;justify-content:center;margin:0;white-space:nowrap}
+.bar .searchbar{grid-area:search;display:flex;width:100%;min-width:0;margin:0}
+.catalog-notice{padding:8px 11px;line-height:1.4;font-size:10px}
+.heading{margin:19px 0 17px}
+.heading p{display:none}
+.product{align-items:stretch;min-width:0}
+.product .p-meta,.product .p-title,.product .p-desc,.product .p-foot{width:auto;max-width:none;min-width:0}
+.product .p-foot{align-self:stretch}
+.product .card-actions{width:100%;min-width:0}
+}
+@media(max-width:390px){
+.bar{grid-template-columns:minmax(0,1fr) auto}
+.bar .brand{font-size:21px}
+}
 </style></head><body>
 <header><div class="shell bar"><a href="#" class="brand" aria-label="Anshel Market beranda">anshel<span>.</span>market</a><nav class="nav"><a href="#catalog">Katalog</a><a href="#about">Tentang</a><a href="#help">Panduan</a></nav><label class="searchbar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input type="search" id="search" placeholder="Cari source code, template, atau teknologi..." aria-label="Cari source code"></label><a class="header-action" href="#faq">FAQ</a></div></header>
 <nav class="subnav" aria-label="Kategori utama"><div class="shell"><button data-category="" aria-pressed="true">Semua produk</button><button data-category="Website" aria-pressed="false">Website & landing page</button><button data-category="Dashboard" aria-pressed="false">Dashboard & admin</button><button data-category="AI Tools" aria-pressed="false">AI & automation</button></div></nav>
