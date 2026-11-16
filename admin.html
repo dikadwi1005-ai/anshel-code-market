@@ -54,14 +54,14 @@
 
   <section id="dashboard" hidden>
     <div class="dashboard-bar">
-      <div><div class="eyebrow">ANSHEL CODE MARKET</div><h1>Dashboard Admin</h1><p>Kelola katalog produk, arsip Arsip ZIP, dan tinjau status pesanan.</p></div>
+      <div><div class="eyebrow">ANSHEL CODE MARKET</div><h1>Dashboard Admin</h1><p>Kelola katalog produk, pratinjau publik, dan pantau kesiapan toko.</p></div>
       <div class="account"><span class="account-email" id="accountEmail"></span><button class="btn btn-light" id="logoutButton" type="button">Keluar</button></div>
     </div>
 
     <div class="stats">
       <div class="stat"><span>Total produk</span><strong id="totalProducts">—</strong><small>Data dari Firestore</small></div>
       <div class="stat"><span>Draft</span><strong id="draftProducts">—</strong><small>Belum tampil sebagai rilis</small></div>
-      <div class="stat"><span>Terbit</span><strong id="publishedProducts">—</strong><small>Harus memiliki ZIP dan lisensi</small></div>
+      <div class="stat"><span>Ditampilkan</span><strong id="publishedProducts">—</strong><small>Pratinjau publik, belum dijual</small></div>
       <div class="stat"><span>Pesanan</span><strong id="totalOrders">—</strong><small>Checkout masih belum aktif</small></div>
     </div>
 
@@ -73,8 +73,8 @@
       </aside>
       <div class="work-main">
         <section id="productsSection" aria-labelledby="productHeading">
-          <div class="content-heading"><div><h2 id="productHeading">Kelola Produk</h2><p>Produk disimpan sebagai draft. Publikasi dan penjualan belum diaktifkan selama penyimpanan ZIP privat belum tersedia.</p></div><div class="toolbar-actions"><button class="btn btn-light" id="importDrafts" type="button">Impor 6 draft konsep</button><button class="btn btn-primary" id="newProduct" type="button">Tambah produk</button></div></div>
-          <div class="tools"><input type="search" id="productSearch" placeholder="Cari produk, kategori, atau teknologi" aria-label="Cari produk"><select id="statusFilter" aria-label="Filter status"><option value="">Semua status</option><option value="draft">Draft</option><option value="published">Terbit</option><option value="archived">Arsip</option></select><button class="btn btn-light" id="reloadProducts" type="button">Muat ulang</button></div>
+          <div class="content-heading"><div><h2 id="productHeading">Kelola Produk</h2><p>Atur status Pratinjau publik agar perubahan produk tampil di website. Pembelian dan unduhan tetap nonaktif.</p></div><div class="toolbar-actions"><button class="btn btn-light" id="importDrafts" type="button">Impor 6 draft konsep</button><button class="btn btn-primary" id="newProduct" type="button">Tambah produk</button></div></div>
+          <div class="tools"><input type="search" id="productSearch" placeholder="Cari produk, kategori, atau teknologi" aria-label="Cari produk"><select id="statusFilter" aria-label="Filter status"><option value="">Semua status</option><option value="draft">Draft</option><option value="preview">Pratinjau publik</option><option value="published">Terbit lama</option><option value="archived">Arsip</option></select><button class="btn btn-light" id="reloadProducts" type="button">Muat ulang</button></div>
           <div class="table-wrap"><table><thead><tr><th>Produk</th><th>Harga</th><th>Status</th><th>ZIP privat</th><th>Aksi</th></tr></thead><tbody id="productRows"></tbody></table></div>
         </section>
         <section id="ordersSection" aria-labelledby="ordersHeading" hidden>
@@ -100,9 +100,9 @@
         <label class="full">Fitur (satu fitur per baris)<textarea name="features" rows="4"></textarea></label>
         <label class="full">Path gambar preview<input name="preview_path" placeholder="/previews/website.svg"></label>
         <label class="full">Ringkasan lisensi<textarea name="license_summary" rows="3" placeholder="Hak penggunaan, redistribusi, dan batasan"></textarea></label>
-        <label>Status<select name="status"><option value="draft">Draft</option><option value="published" disabled>Terbit (belum tersedia)</option><option value="archived">Arsip</option></select></label>
+        <label>Status<select name="status"><option value="draft">Draft — privat</option><option value="preview">Pratinjau publik — tampil di website</option><option value="published" disabled>Terbit (penjualan belum tersedia)</option><option value="archived">Arsip</option></select></label>
       </div>
-      <div class="editor-notice">Status terbit masih dikunci oleh Firestore Security Rules sampai penyimpanan ZIP dan pemeriksaan lisensi benar-benar siap. Hanya status draft dan arsip yang dapat disimpan.</div>
+      <div class="editor-notice">Pratinjau publik hanya menampilkan informasi produk di website, bukan menawarkan pembelian. Status terbit/checkout tetap dikunci sampai file ZIP dan lisensi siap.</div>
       <div class="modal-actions"><button type="button" id="cancelEditor" class="btn btn-light">Batal</button><button type="submit" class="btn btn-primary" id="saveProduct">Simpan produk</button></div>
     </form>
     <div class="zip-uploader" id="zipUploader" hidden>
