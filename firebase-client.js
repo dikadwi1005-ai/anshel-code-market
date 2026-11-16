@@ -32,15 +32,33 @@ export async function openFirebase(config, { administrator = false } = {}) {
   };
 
   const client = {
+    async listPublicCatalog() {
+      // "preview" means publicly visible but NOT available for purchase.
+      // Request status explicitly: Firestore security rules are not filters.
+      const statuses = ["preview", "published"];
+      const outcomes = await Promise.allSettled(statuses.map(async status => {
+        const query = dbSdk.query(
+          dbSdk.collection(db, "market_products"),
+          dbSdk.where("status", "==", status),
+          dbSdk.limit(24)
+        );
+        return (await dbSdk.getDocs(query)).docs.map(mapDocument);
+      }));
+      const [previews, published] = outcomes;
+      // During rules rollout, retain backward-compatible reads of any
+      // already-visible published records. Never allow drafts as a fallback.
+      if (previews.status === "rejected" && published.status === "rejected")
+        throw previews.reason;
+      const rows = outcomes.flatMap(result =>
+        result.status === "fulfilled" ? result.value : []);
+      return [...new Map(rows.map(item => [item.id, item])).values()]
+        .sort((a, b) =>
+          String(b.created_at || "").localeCompare(String(a.created_at || "")))
+        .slice(0, 24);
+    },
     async listPublished() {
-      const query = dbSdk.query(
-        dbSdk.collection(db, "market_products"),
-        dbSdk.where("status", "==", "published"),
-        dbSdk.limit(24)
-      );
-      const rows = (await dbSdk.getDocs(query)).docs.map(mapDocument);
-      return rows.sort((a, b) =>
-        String(b.created_at || "").localeCompare(String(a.created_at || "")));
+      return (await this.listPublicCatalog())
+        .filter(item => item.status === "published");
     }
   };
   if (!administrator) return client;
@@ -91,6 +109,12 @@ export async function openFirebase(config, { administrator = false } = {}) {
         updated_at: dbSdk.serverTimestamp()
       });
       return result.id;
+    },
+    async setCatalogVisibility(id, visible) {
+      await dbSdk.updateDoc(dbSdk.doc(db, "market_products", id), {
+        status: visible ? "preview" : "draft",
+        updated_at: dbSdk.serverTimestamp()
+      });
     },
     async archiveProduct(id) {
       await dbSdk.updateDoc(dbSdk.doc(db, "market_products", id), {
