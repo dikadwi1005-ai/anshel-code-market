@@ -97,7 +97,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #38
 .order-header h2{margin-bottom:6px}
 .order-preview-tag{display:inline-flex;align-items:center;justify-content:center;flex:none;padding:7px 9px;border:1px solid #eeddb8;border-radius:7px;background:#fff8e9;color:#85643a;font-size:10px;font-weight:800;white-space:nowrap}
 .product-row{align-items:center;padding-bottom:13px}
-.product-row img{aspect-ratio:1.5}
+.product-row img{aspect-ratio:1.5;height:80px;object-fit:cover}
 .product-copy h3{overflow-wrap:anywhere;font-size:16px;line-height:1.35}
 .product-copy .product-stack{color:#718299;line-height:1.55}
 .order-description{margin:0 22px 16px;color:#74849a;line-height:1.65;font-size:12px}
@@ -120,7 +120,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #38
 .order-header{gap:8px;align-items:flex-start}
 .order-preview-tag{font-size:9px;padding:6px 8px}
 .product-row{gap:12px;padding-bottom:10px}
-.product-row img{width:106px}
+.product-row img{width:106px;height:71px}
 .product-copy h3{font-size:15px}
 .order-description{margin:0 17px 13px;font-size:11px}
 .order-meta{margin:0 17px 14px;padding:12px 0;gap:10px}
