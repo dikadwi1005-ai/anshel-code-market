@@ -5,6 +5,20 @@
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
+async function revealLegacy(page){
+  // Keep the original six-example regression path testable after Firestore
+  // becomes the main public catalog. The toggle must be explicit on that site.
+  const configured=await page.evaluate(async()=>{
+    try{const r=await fetch('/api/market-config',{cache:'no-store'});
+      return r.ok && (await r.json()).configured===true;}catch{return false}
+  });
+  if(configured)await page.locator('#marketLive').waitFor({state:'visible',timeout:16000});
+  const legacy=page.locator('#conceptLayout');
+  if(await legacy.evaluate(el=>el.hidden)){
+    await page.locator('#showDemoCatalog').click();
+  }
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  let total=0;
@@ -12,6 +26,7 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
    const page=await browser.newPage({viewport:{width,height}});
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(base,{waitUntil:'load',timeout:30000});
+   await revealLegacy(page);
    assert.equal(await page.locator('.product').count(),6,label+': catalog count');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+': no overflow on catalog');
    assert.ok(await page.evaluate(async()=>{const list=[...document.querySelectorAll('.preview-image')];await Promise.all(list.map(async img=>{img.loading='eager';try{await img.decode()}catch{}}));return list.every(img=>img.naturalWidth>0)}),label+': previews available');
@@ -35,13 +50,16 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
    assert.equal(await page.locator('.total-line.final strong').innerText(),'Belum ditetapkan',label+': no misleading payable total');
    assert.ok((await page.locator('.order-description').innerText()).length>10,label+': product description in summary');
    await page.goto(base+'/produk.html?id=1',{waitUntil:'load'});
+   await revealLegacy(page);
    await page.locator('#favorite').click();
    await page.goto(base+'/tersimpan.html',{waitUntil:'load'});
+   await revealLegacy(page);
    assert.equal(await page.locator('.saved-card').count(),1,label+': favorite persists');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+': no saved-page overflow');
    await page.locator('.saved-card [data-remove]').first().click();
    assert.equal(await page.locator('.saved-empty h2').innerText(),'Belum ada produk tersimpan.');
    await page.goto(base,{waitUntil:'load'});
+   await revealLegacy(page);
    await page.locator('[data-compare="1"]').check();
    await page.locator('[data-compare="2"]').check();
    await page.locator('#compareToggle').click();
@@ -54,25 +72,33 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
  }
  const p=await browser.newPage({viewport:{width:375,height:812}});
  await p.goto(base+'/#produk-6',{waitUntil:'load'});
+   await revealLegacy(p);
  await p.waitForURL('**/produk.html?id=6');
  assert.equal(await p.locator('h1').innerText(),'Creative Portfolio');
  await p.goto(base+'/checkout.html?id=999',{waitUntil:'load'});
+   await revealLegacy(p);
  assert.equal(await p.locator('.missing h2').innerText(),'Produk tidak ditemukan.');
  await p.goto(base+'/produk.html?id=999',{waitUntil:'load'});
+   await revealLegacy(p);
  assert.equal(await p.locator('h1').innerText(),'Produk tidak ditemukan.');
  await p.goto(base+'/?kategori=Dashboard',{waitUntil:'load'});
+   await revealLegacy(p);
  assert.equal(await p.locator('.product').count(),2);
  await p.goto(base+'/tersimpan.html',{waitUntil:'load'});
+   await revealLegacy(p);
  assert.equal(await p.locator('.saved-empty h2').innerText(),'Belum ada produk tersimpan.');
  // Recently viewed products remain local to this browser and can be cleared.
  await p.goto(base+'/produk.html?id=2',{waitUntil:'load'});
+   await revealLegacy(p);
  await p.goto(base+'/',{waitUntil:'load'});
+   await revealLegacy(p);
  assert.equal(await p.locator('#recentSection').evaluate(el=>el.hidden),false);
  assert.equal(await p.locator('.recent-item strong').first().innerText(),'Business Dashboard UI');
  await p.locator('#clearRecent').click();
  assert.equal(await p.locator('#recentSection').evaluate(el=>el.hidden),true);
  // Shared filter links hydrate the controls and can be reset.
  await p.goto(base+'/?q=booking&kategori=Website&urutkan=low',{waitUntil:'load'});
+   await revealLegacy(p);
  assert.equal(await p.locator('.product').count(),1);
  assert.equal(await p.locator('#search').inputValue(),'booking');
  assert.equal(await p.locator('#sort').inputValue(),'low');
@@ -90,6 +116,7 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
  assert.equal(await p.locator('[data-category="Dashboard"]').getAttribute('aria-pressed'),'false');
  assert.equal(await p.locator('#search').inputValue(),'dashboard');
  await p.goto(base+'/',{waitUntil:'load'});
+   await revealLegacy(p);
  await p.keyboard.press('/');
  assert.ok(await p.locator('#search').evaluate(el=>el===document.activeElement));
  // Admin and published-content pages must fail closed when unconfigured.
