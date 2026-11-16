@@ -79,14 +79,17 @@
         '</div>'+
       '</section>'+
       '<aside class="panel order" aria-label="Ringkasan produk">'+
-        '<div class="panel-head"><h2>Ringkasan produk</h2><p>Informasi pratinjau · bukan invoice</p></div>'+
-        '<div class="product-row"><img src="/previews/'+product.kind+'.svg" width="1200" height="780" alt="Pratinjau '+safe(product.name)+'"><div class="product-copy"><small>'+safe(product.category)+'</small><h3>'+safe(product.name)+'</h3><p>'+safe(product.stack)+'</p></div></div>'+
-        '<div class="totals"><div class="total-line"><span>Harga konsep</span><strong>'+money(product.price)+'</strong></div><div class="total-line"><span>Biaya transfer</span><strong>Tergantung bank pengirim</strong></div><div class="total-line final"><div><span>Estimasi harga produk</span><small>Belum final</small></div><strong>'+money(product.price)+'</strong></div></div>'+
-        '<div class="order-message">Produk ini masih konsep, belum tersedia untuk dibeli. Tidak ada nomor pesanan atau pembayaran yang dibuat dari halaman ini.</div>'+
-        '<button id="createOrder" class="order-button" type="button" disabled aria-disabled="true">Pesanan belum tersedia</button>'+
-        '<div class="order-foot"><a href="/produk.html?id='+product.id+'">Kembali ke detail</a><a href="/kebijakan.html">Kebijakan & lisensi</a></div>'+
-      '</aside>'+
-    '</div>';
+        '<div class="panel-head order-header"><div><h2>Ringkasan produk</h2><p>Informasi konsep, bukan tagihan pembayaran</p></div><span class="order-preview-tag">Belum dijual</span></div>'+
+        '<div class="product-row"><img src="/previews/'+product.kind+'.svg" width="1200" height="780" alt="Pratinjau '+safe(product.name)+'"><div class="product-copy"><small>'+safe(product.category)+' · Source code</small><h3>'+safe(product.name)+'</h3><p class="product-stack">'+safe(product.stack)+'</p></div></div>'+
+        '<div class="order-description">'+safe(product.desc)+'</div>'+
+        '<div class="order-meta"><div><span>Jumlah</span><strong>1 konsep produk</strong></div><div><span>File & lisensi</span><strong>Belum tersedia</strong></div></div>'+
+        '<div class="totals"><div class="price-block"><span>Harga ilustratif produk</span><strong>'+money(product.price)+'</strong><small>Belum menjadi total tagihan</small></div>'+
+        '<div class="total-line"><span>Biaya transfer bank</span><strong>Mengikuti ketentuan bank pengirim</strong></div>'+
+        '<div class="total-line final"><span>Total yang harus dibayar</span><strong class="unavailable-total">Belum ditetapkan</strong></div></div>'+
+        '<div class="order-message"><strong>Belum ada pesanan.</strong> Produk ini masih konsep dan belum dapat dibeli. Jangan transfer berdasarkan harga ilustratif di atas.</div>'+
+        '<button id="createOrder" class="order-button" type="button" disabled aria-disabled="true">Pembelian belum tersedia</button>'+
+        '<div class="order-foot"><a href="/produk.html?id='+product.id+'">Kembali ke detail produk</a><a href="/kebijakan.html">Kebijakan & lisensi</a></div>'+
+      '</aside>'+    '</div>';
 })();
 </script>
 </body>
