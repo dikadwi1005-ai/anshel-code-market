@@ -33,39 +33,39 @@ export async function openFirebase(config, { administrator = false } = {}) {
 
   const client = {
     async listPublicCatalog() {
-      // "preview" means publicly visible but NOT available for purchase.
-      // Request status explicitly: Firestore security rules are not filters.
-      const statuses = ["preview", "published"];
-      const outcomes = await Promise.allSettled(statuses.map(async status => {
-        const query = dbSdk.query(
-          dbSdk.collection(db, "market_products"),
-          dbSdk.where("status", "==", status),
-          dbSdk.limit(24)
-        );
-        return (await dbSdk.getDocs(query)).docs.map(mapDocument);
-      }));
-      const [previews, published] = outcomes;
-      // Do not silently interpret a permissions failure as an empty catalog.
-      // "preview" must be explicitly readable in the deployed Firestore Rules.
-      if (previews.status === "rejected") {
-        const error = previews.reason;
-        if (error?.code === "permission-denied")
-          throw new Error("Firestore Security Rules belum mengizinkan kueri pratinjau publik.");
-        throw error;
-      }
-      if (published.status === "rejected" &&
-          published.reason?.code !== "permission-denied")
-        throw published.reason;
-      const rows = outcomes.flatMap(result =>
-        result.status === "fulfilled" ? result.value : []);
-      return [...new Map(rows.map(item => [item.id, item])).values()]
-        .sort((a, b) =>
-          String(b.created_at || "").localeCompare(String(a.created_at || "")))
-        .slice(0, 24);
+      // The rules require a public status filter and at most 24 results per query.
+      const products = dbSdk.collection(db, "market_products");
+      const filters = [
+        dbSdk.where("status", "in", ["preview", "published"]),
+        dbSdk.orderBy(dbSdk.documentId()),
+        dbSdk.limit(24)
+      ];
+      const rows = [];
+      let cursor;
+      let snapshot;
+      do {
+        const query = dbSdk.query(products, ...filters,
+          ...(cursor ? [dbSdk.startAfter(cursor)] : []));
+        snapshot = await dbSdk.getDocsFromServer(query);
+        rows.push(...snapshot.docs.map(mapDocument));
+        cursor = snapshot.docs.at(-1);
+      } while (snapshot.size === 24);
+      return rows.sort((a, b) =>
+        String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    },
+    async findPublicProduct(slug) {
+      if (!slug || slug.length > 120 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return null;
+      const query = dbSdk.query(
+        dbSdk.collection(db, "market_products"),
+        dbSdk.where("status", "in", ["preview", "published"]),
+        dbSdk.where("slug", "==", slug),
+        dbSdk.limit(1)
+      );
+      const result = await dbSdk.getDocsFromServer(query);
+      return result.empty ? null : mapDocument(result.docs[0]);
     },
     async listPublished() {
-      return (await this.listPublicCatalog())
-        .filter(item => item.status === "published");
+      return (await this.listPublicCatalog()).filter(item => item.status === "published");
     }
   };
   if (!administrator) return client;
@@ -129,21 +129,26 @@ export async function openFirebase(config, { administrator = false } = {}) {
       });
     },
     async importDrafts(items) {
-      // Never mutate existing slugs. Only explicitly requested admin imports.
-      const previous = await dbSdk.getDocs(dbSdk.collection(db, "market_products"));
-      const slugs = new Set(previous.docs.map(row => row.data().slug));
-      let added = 0;
-      for (const item of items) {
-        if (slugs.has(item.slug)) continue;
-        const { status, ...draft } = item;
-        await dbSdk.addDoc(dbSdk.collection(db, "market_products"), {
-          ...draft, status: "draft",
-          created_at: dbSdk.serverTimestamp(), updated_at: dbSdk.serverTimestamp()
-        });
-        slugs.add(item.slug);
-        added++;
-      }
-      return added;
+      // Existing drafts imported before stable IDs keep their original documents.
+      const products = dbSdk.collection(db, "market_products");
+      const previous = await dbSdk.getDocsFromServer(products);
+      const existingSlugs = new Set(previous.docs.map(row => row.data().slug));
+      const pending = items.filter(item => !existingSlugs.has(item.slug));
+      if (!pending.length) return 0;
+      const refs = pending.map(item => dbSdk.doc(products, "concept-" + item.slug));
+      return dbSdk.runTransaction(db, async transaction => {
+        const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+        let added = 0;
+        for (const [index, item] of pending.entries()) {
+          if (snapshots[index].exists()) continue;
+          transaction.set(refs[index], {
+            ...item, status: "draft",
+            created_at: dbSdk.serverTimestamp(), updated_at: dbSdk.serverTimestamp()
+          });
+          added++;
+        }
+        return added;
+      });
     }
   };
 }

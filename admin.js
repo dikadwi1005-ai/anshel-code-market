@@ -72,6 +72,7 @@ async function login(event) {
     showOnly("dashboard");
     toast("Data admin berhasil dimuat dari Firestore.");
   } catch (error) {
+    await state.client.signOut().catch(() => {});
     state.admin = null;
     $("password").value = "";
     showOnly("loginScreen");
@@ -185,7 +186,7 @@ function getFormData() {
   const obj = {
     name: field("name").value.trim(),
     slug: field("slug").value.trim(),
-    category: field("category").value,
+    category: field("category").value.trim(),
     stack: field("stack").value.trim(),
     description: field("description").value.trim(),
     price_idr: Number(field("price_idr").value),
@@ -200,6 +201,12 @@ function getFormData() {
       !Number.isSafeInteger(obj.price_idr) || obj.price_idr < 0 ||
       obj.price_idr > 1000000000)
     throw Error("Periksa nama, slug dan harga produk.");
+  if (obj.category.length < 2 || obj.category.length > 60 ||
+      obj.stack.length > 300 || obj.description.length > 5000 ||
+      obj.license_summary.length > 10000 || obj.preview_path.length > 150)
+    throw Error("Periksa panjang kategori, teknologi, deskripsi, lisensi, dan path pratinjau.");
+  if (state.products.some(product => product.slug === obj.slug && product.id !== state.editingId))
+    throw Error("Slug sudah dipakai produk lain.");
   if (!["draft","preview","archived"].includes(obj.status))
     throw Error("Penjualan belum aktif. Gunakan Pratinjau publik untuk menampilkan produk.");
   if (obj.features.length > 30)
@@ -241,8 +248,7 @@ async function toggleVisibility(id) {
       ? "Pratinjau produk sudah ditampilkan di website. Pembelian tetap nonaktif."
       : "Produk disembunyikan dari katalog publik.");
   } catch (error) {
-    toast("Gagal mengubah tampilan: "+explain(error)+
-      ". Pastikan firebase/firestore.rules terbaru sudah dipasang di Firebase Console.");
+    toast("Gagal mengubah tampilan: "+explain(error));
   } finally {
     state.busy = false;
   }
@@ -286,7 +292,7 @@ async function importDrafts() {
     }));
     const count = await state.client.importDrafts(items);
     await reloadAll();
-    toast(count+" produk konsep ditambahkan sebagai draft.");
+    toast(count ? count+" produk konsep ditambahkan sebagai draft." : "Semua konsep sudah ada di Firestore.");
   } catch (error) {
     toast("Impor gagal: "+explain(error));
   } finally {

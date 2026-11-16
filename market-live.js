@@ -3,7 +3,8 @@
 (async () => {
   const home = document.getElementById("marketLive");
   const detail = document.getElementById("releaseApp");
-  if (!home && !detail) return;
+  const params = new URLSearchParams(location.search);
+  if ((!home && !detail) || (home && params.get("konsep") === "1")) return;
 
   const safe = value => String(value ?? "").replace(/[&<>"']/g,
     c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -14,8 +15,14 @@
     /^\/previews\/[a-z0-9_-]+\.svg$/.test(p.preview_path || "")
       ? p.preview_path : "/previews/website.svg";
 
+  if (home) {
+    home.hidden = false;
+    document.querySelector('a[href="#catalog"]')?.setAttribute("href", "#marketLive");
+    document.getElementById("marketLiveGrid").textContent = "Memuat katalog…";
+  }
+
   let products = [];
-  let configured = false;
+  let product = null;
   try {
     const res = await fetch("/api/market-config", {
       cache: "no-store", signal: AbortSignal.timeout(9000)
@@ -24,82 +31,73 @@
     const cfg = await res.json();
     if (cfg.provider !== "firebase" || !cfg.configured || !cfg.firebase)
       throw Error("Proyek Firebase belum dikonfigurasi.");
-    configured = true;
     const { openFirebase } = await import("./firebase-client.js");
     const client = await openFirebase(cfg.firebase);
-    products = await client.listPublicCatalog();
+    if (home) products = await client.listPublicCatalog();
+    else product = await client.findPublicProduct(params.get("slug") || "");
   } catch (error) {
-    if (home && configured) {
-      home.hidden = false;
-      const rulesBlocked = /Firestore Security Rules/i.test(String(error?.message || ""));
-      document.getElementById("marketLiveGrid").innerHTML = rulesBlocked
-        ? '<div class="live-empty"><strong>Pratinjau Firebase belum bisa ditampilkan.</strong>'+
-          '<p>Aturan baca untuk pratinjau publik belum aktif di Firestore. '+
-          'Katalog konsep lama masih tersedia di bawah, tanpa pembelian.</p></div>'
-        : '<div class="live-empty"><strong>Data Firebase belum bisa dimuat.</strong>'+
-          '<p>Katalog konsep lama masih tersedia di bawah. Periksa koneksi '+
-          'proyek Firebase Anshel Code Market.</p></div>';
-      document.querySelector(".live-controls").hidden = true;
-    }
-    if (detail) {
+    const reason = error?.code === "permission-denied"
+      ? "Firestore menolak kueri pratinjau publik. Periksa Security Rules."
+      : error?.code === "unavailable"
+        ? "Firestore sedang tidak dapat dihubungi. Coba muat ulang halaman."
+        : error?.message || "Coba muat ulang halaman.";
+    if (home) {
+      home.querySelector(".live-controls").hidden = true;
+      document.getElementById("marketLiveGrid").innerHTML =
+        '<div class="live-empty" role="alert"><strong>Katalog Firebase gagal dimuat.</strong><p>'+
+        safe(reason)+'</p></div>';
+    } else {
       detail.innerHTML =
-        '<section class="not-found"><h1>Katalog belum dapat dimuat</h1>'+
-        '<p>Data produk Firestore belum tersedia. Kamu masih bisa melihat konsep lama di katalog.</p>'+
-        '<a class="btn btn-primary" href="/">Kembali ke katalog</a></section>';
+        '<section class="not-found" role="alert"><h1>Katalog Firebase gagal dimuat</h1><p>'+
+        safe(reason)+'</p><a class="btn btn-primary" href="/">Kembali ke katalog</a></section>';
     }
     return;
   }
 
   if (home) {
-    // Once Firestore is connected, its public preview documents become the
-    // primary catalogue. Keep old hard-coded concepts available on demand.
-    home.hidden = false;
-    const legacy = document.getElementById("conceptLayout");
-    const recent = document.getElementById("recentSection");
-    const toggle = document.getElementById("showDemoCatalog");
     const grid = document.getElementById("marketLiveGrid");
     const search = document.getElementById("search");
     const category = document.getElementById("liveCategory");
     const sort = document.getElementById("liveSort");
     const count = document.getElementById("liveCount");
-
-    if (legacy) legacy.hidden = true;
-    if (recent) recent.hidden = true;
-    if (toggle) {
-      toggle.hidden = false;
-      toggle.addEventListener("click", () => {
-        if (!legacy) return;
-        legacy.hidden = !legacy.hidden;
-        legacy.classList.toggle("legacy-visible", !legacy.hidden);
-        toggle.textContent = legacy.hidden
-          ? "Lihat 6 konsep katalog lama (Simpan/Bandingkan)"
-          : "Sembunyikan 6 konsep katalog lama";
-        toggle.setAttribute("aria-expanded", String(!legacy.hidden));
-        if (recent) recent.hidden = legacy.hidden || !recent.children.length ||
-          !document.getElementById("recentGrid")?.children.length;
-      });
-      toggle.textContent = "Lihat 6 konsep katalog lama (Simpan/Bandingkan)";
+    const categoryButtons = [...document.querySelectorAll("[data-category]")];
+    const categories = new Set([...category.options].map(option => option.value));
+    for (const name of new Set(products.map(item => item.category))) {
+      if (!categories.has(name)) {
+        category.add(new Option(name, name));
+        categories.add(name);
+      }
     }
-    document.querySelectorAll('a[href="#catalog"]').forEach(a=>{
-      a.setAttribute("href", "#marketLive");
-    });
-    const notice = document.querySelector(".catalog-notice");
-    if (notice) notice.innerHTML =
-      '<strong>Katalog Firestore</strong> Data produk diambil dari Firebase. '+
-      'Status pratinjau berarti belum bisa dibeli, harga belum menjadi tagihan.';
-    const savedCategory = new URLSearchParams(location.search).get("kategori");
-    if (savedCategory && [...category.options].some(opt=>opt.value===savedCategory))
-      category.value = savedCategory;
-    const savedSort = new URLSearchParams(location.search).get("urutkan");
-    if (["low","high","az"].includes(savedSort)) sort.value = savedSort;
+    const orders = ["default", "low", "high", "az"];
+
+    function applyUrl() {
+      const saved = new URLSearchParams(location.search);
+      search.value = saved.get("q") || "";
+      category.value = categories.has(saved.get("kategori")) ? saved.get("kategori") : "";
+      sort.value = orders.includes(saved.get("urutkan")) ? saved.get("urutkan") : "default";
+    }
+
+    function syncUrl(mode) {
+      const url = new URL(location.href);
+      for (const [key, value] of Object.entries({
+        q: search.value.trim(), kategori: category.value,
+        urutkan: sort.value === "default" ? "" : sort.value
+      })) {
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+      }
+      if (url.href !== location.href) history[mode](null, "", url);
+    }
 
     function draw() {
       const q = (search?.value || "").trim().toLocaleLowerCase("id");
       const selected = category.value;
       const order = sort.value;
+      for (const button of categoryButtons)
+        button.setAttribute("aria-pressed", String(button.dataset.category === selected));
       const shown = products.filter(p =>
         (!selected || p.category === selected) &&
-        [p.name,p.category,p.stack,p.description,p.slug]
+        [p.name,p.category,p.stack,p.description,p.slug,...(p.features || [])]
           .join(" ").toLocaleLowerCase("id").includes(q));
       if (order === "low") shown.sort((a,b)=>a.price_idr-b.price_idr);
       if (order === "high") shown.sort((a,b)=>b.price_idr-a.price_idr);
@@ -129,28 +127,28 @@
             "Dari dashboard, ubah statusnya menjadi Pratinjau publik agar muncul di sini.")+
         '</p></div>';
     }
-    category.addEventListener("change", draw);
-    sort.addEventListener("change", draw);
-    search?.addEventListener("input", draw);
-    document.querySelectorAll("[data-category]").forEach(btn=>
-      btn.addEventListener("click", () => {
-        if ([...category.options].some(opt=>opt.value===btn.dataset.category))
-          category.value = btn.dataset.category;
-        else category.value = "";
-        draw();
-      }));
-    window.addEventListener("popstate",()=>{
-      const params = new URLSearchParams(location.search);
-      const next = params.get("kategori") || "";
-      category.value = [...category.options].some(opt=>opt.value===next) ? next : "";
+    function update(mode) {
+      draw();
+      syncUrl(mode);
+    }
+    category.addEventListener("change", () => update("pushState"));
+    sort.addEventListener("change", () => update("pushState"));
+    search.addEventListener("input", () => update("replaceState"));
+    for (const button of categoryButtons) {
+      button.addEventListener("click", () => {
+        category.value = button.dataset.category;
+        update("pushState");
+      });
+    }
+    window.addEventListener("popstate", () => {
+      applyUrl();
       draw();
     });
+    applyUrl();
     draw();
   }
 
   if (detail) {
-    const slug = new URLSearchParams(location.search).get("slug") || "";
-    const product = products.find(item => item.slug === slug);
     if (!product) {
       detail.innerHTML =
         '<section class="not-found"><h1>Pratinjau produk tidak ditemukan</h1>'+

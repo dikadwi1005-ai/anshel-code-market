@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff">
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Dashboard administrasi privat Anshel Code Market.">
+<meta name="description" maxlength="5000" content="Dashboard administrasi privat Anshel Code Market.">
 <title>Admin — Anshel Code Market</title>
 <link rel="stylesheet" href="/admin.css">
 </head>
@@ -92,14 +92,14 @@
     <form id="productForm">
       <div class="field-grid">
         <label>Nama produk<input name="name" maxlength="160" required placeholder="Nama produk"></label>
-        <label>Slug produk<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required placeholder="nama-produk"></label>
+        <label>Slug produk<input name="slug" maxlength="120" pattern="[a-z0-9]+(?:\x2D[a-z0-9]+)*" required placeholder="nama-produk"></label>
         <label>Kategori<select name="category"><option>Website</option><option>Dashboard</option><option>AI Tools</option><option>Template</option><option>Lainnya</option></select></label>
-        <label>Harga final (Rp)<input name="price_idr" type="number" min="0" step="1" required value="0"></label>
-        <label class="full">Teknologi<input name="stack" placeholder="HTML, CSS, JavaScript"></label>
+        <label>Harga ilustratif (Rp)<input name="price_idr" type="number" min="0" max="1000000000" step="1" required value="0"></label>
+        <label class="full">Teknologi<input name="stack" maxlength="300" placeholder="HTML, CSS, JavaScript"></label>
         <label class="full">Deskripsi<textarea name="description" rows="3" placeholder="Jelaskan produk"></textarea></label>
         <label class="full">Fitur (satu fitur per baris)<textarea name="features" rows="4"></textarea></label>
-        <label class="full">Path gambar preview<input name="preview_path" placeholder="/previews/website.svg"></label>
-        <label class="full">Ringkasan lisensi<textarea name="license_summary" rows="3" placeholder="Hak penggunaan, redistribusi, dan batasan"></textarea></label>
+        <label class="full">Path gambar preview<input name="preview_path" maxlength="150" placeholder="/previews/website.svg"></label>
+        <label class="full">Ringkasan lisensi<textarea name="license_summary" maxlength="10000" rows="3" placeholder="Hak penggunaan, redistribusi, dan batasan"></textarea></label>
         <label>Status<select name="status"><option value="draft">Draft — privat</option><option value="preview">Pratinjau publik — tampil di website</option><option value="published" disabled>Terbit (penjualan belum tersedia)</option><option value="archived">Arsip</option></select></label>
       </div>
       <div class="editor-notice">Pratinjau publik hanya menampilkan informasi produk di website, bukan menawarkan pembelian. Status terbit/checkout tetap dikunci sampai file ZIP dan lisensi siap.</div>
