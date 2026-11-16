@@ -9,7 +9,7 @@ export function GET() {
   };
   const configured = !!firebase.apiKey && /^[a-z0-9-]+$/.test(firebase.projectId) &&
     firebase.authDomain === firebase.projectId + ".firebaseapp.com" &&
-    /^\\d+:[^:]+:web:[A-Za-z0-9_-]+$/.test(firebase.appId);
+    /^\d+:[^:]+:web:[A-Za-z0-9_-]+$/.test(firebase.appId);
   return NextResponse.json({
     provider: "firebase", configured,
     ...(configured ? { firebase } : {}),
