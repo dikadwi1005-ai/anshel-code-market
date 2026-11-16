@@ -1,111 +1,161 @@
-/* Synthetic Supabase API tests: verifies admin UI wiring, NOT real RLS/DB.
-   Run with local static server on BASE_URL and Playwright installed in tests/. */
-const assert=require("node:assert/strict");
-const {chromium}=require("playwright");
-const origin=(process.env.BASE_URL||"http://127.0.0.1:4173").replace(/\/$/,"");
-const fakeUrl="https://market-ci.supabase.co";
-const memberId="11111111-1111-4111-8111-111111111111";
-const newId="22222222-2222-4222-8222-222222222222";
-const example=()=>({
- id:memberId,slug:"company-profile-starter",name:"Company Profile Starter",
- category:"Website",stack:"HTML, CSS",description:"Draft test",
- price_idr:399000,status:"draft",features:["Responsif"],
- preview_path:"/previews/website.svg",license_summary:"",created_at:new Date().toISOString()
-});
-function apiMock(products,assets,{admin=true}={}){
- return async route=>{
-  const req=route.request(),url=new URL(req.url()),path=url.pathname,method=req.method();
-  let body,status=200;
-  if(path==="/auth/v1/token"){
-    body={access_token:"test-access",refresh_token:"test-refresh",expires_in:3600};
-  }else if(path==="/auth/v1/logout"){
-    body={};
-  }else if(path==="/rest/v1/market_admins"){
-    body=admin?[{user_id:memberId}]:[];
-  }else if(path==="/rest/v1/market_products"){
-    if(method==="POST"){
-      const item={id:newId,created_at:new Date().toISOString(),...req.postDataJSON()};
-      products.unshift(item);body=[item];
-    }else if(method==="PATCH"){
-      const id=url.searchParams.get("id")?.replace(/^eq\./,"");
-      const changes=req.postDataJSON();
-      const item=products.find(p=>p.id===id);
-      if(item)Object.assign(item,changes);
-      body=item?[item]:[];
-    }else{
-      body=url.searchParams.get("status")==="eq.published"?products.filter(p=>p.status==="published"):products;
+/* Browser contract tests with a FAKE Firebase adapter.
+ * These verify UI wiring, NOT real Firebase credentials or Firestore Rules.
+ * Run: BASE_URL=http://127.0.0.1:4173 node tests/admin-mock.cjs
+ */
+const assert = require("node:assert/strict");
+const { chromium } = require("playwright");
+const base = (process.env.BASE_URL || "http://127.0.0.1:4173").replace(/\/$/, "");
+const firebaseConfig = {
+  provider: "firebase", configured: true,
+  firebase: {
+    apiKey: "mock-api-key", authDomain: "market-test.firebaseapp.com",
+    projectId: "market-test", appId: "1:123:web:abcdef"
+  },
+  storageEnabled: false, paymentsEnabled: false, ordersEnabled: false
+};
+const adapter = String.raw`
+// Simulate the exported Firebase adapter contract, in-memory only.
+export async function openFirebase(config,{administrator=false}={}) {
+  const now=new Date().toISOString();
+  const products=[{
+    id:"p1",slug:"company-profile-starter",name:"Company Profile Starter",
+    category:"Website",stack:"HTML, CSS",description:"Contoh draft",
+    price_idr:399000,status:"draft",features:["Responsif"],
+    preview_path:"/previews/website.svg",license_summary:"",
+    created_at:now
+  }];
+  const assets=[],orders=[];
+  let loggedIn=null;
+  const client={
+    listPublished:async()=>[{
+      id:"published-1",slug:"example-release",name:"Example Release",
+      category:"Website",stack:"HTML",description:"Produk terbit simulasi",
+      price_idr:250000,status:"published",features:["Fitur A"],
+      preview_path:"/previews/website.svg",license_summary:"Lisensi contoh",
+      created_at:now
+    }]
+  };
+  if(!administrator)return client;
+  return {
+    ...client,
+    signIn:async(email)=>{loggedIn={uid:email.startsWith("nonadmin")?"other":"admin",email};return loggedIn;},
+    signOut:async()=>{loggedIn=null;},
+    isAdmin:async(uid)=>uid==="admin",
+    listProducts:async()=>products.map(p=>({...p})),
+    listAssets:async()=>assets,
+    listOrders:async()=>orders,
+    saveProduct:async(product,id=null)=>{
+      if(id){
+        const p=products.find(p=>p.id===id);
+        if(!p)throw Error("Unknown product");
+        Object.assign(p,product);
+        return id;
+      }
+      const newId="p"+(products.length+1);
+      products.unshift({...product,id:newId,created_at:new Date().toISOString()});
+      return newId;
+    },
+    archiveProduct:async(id)=>{
+      const p=products.find(p=>p.id===id);if(p)p.status="archived";
+    },
+    importDrafts:async(items)=>{
+      const existing=new Set(products.map(p=>p.slug));
+      let added=0;
+      for(const item of items){
+        if(existing.has(item.slug))continue;
+        products.push({...item,id:"p"+(products.length+1)});
+        existing.add(item.slug);added++;
+      }
+      return added;
     }
-  }else if(path==="/rest/v1/market_assets"){
-    if(method==="POST"){
-      const item=req.postDataJSON();
-      assets.splice(0,assets.length,...assets.filter(x=>x.product_id!==item.product_id),item);
-      body=[item];
-    }else body=assets;
-  }else if(path==="/rest/v1/market_orders")body=[];
-  else if(path.startsWith("/storage/v1/object/anshel-source-packages/"))body={Key:path};
-  else {status=404;body={message:"Unknown mock route"}}
-  return route.fulfill({status,contentType:"application/json",body:JSON.stringify(body)});
- };
+  };
 }
-async function mockPage(browser,width,height,{admin=true}={}){
- const page=await browser.newPage({viewport:{width,height}});
- const products=[example()],assets=[];
- await page.route("**/api/market-config",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({configured:true,url:fakeUrl,publishableKey:"sb_publishable_testkey"})}));
- await page.route(fakeUrl+"/**",apiMock(products,assets,{admin}));
- return {page,products,assets};
+`;
+async function installMocks(page) {
+  await page.route("**/api/market-config", route =>
+    route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify(firebaseConfig)}));
+  await page.route("**/firebase-client.js", route =>
+    route.fulfill({status:200,contentType:"text/javascript",body:adapter}));
 }
 (async()=>{
- const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
- let tested=0;
- for(const [width,height] of [[1440,900],[768,1024],[390,844],[320,640]]){
-  const {page,products,assets}=await mockPage(browser,width,height);
-  const errors=[];page.on("pageerror",e=>errors.push(e.message));
-  await page.goto(origin+"/admin.html",{waitUntil:"domcontentloaded"});
-  await page.locator("#loginScreen").waitFor({state:"visible"});
-  await page.locator("#email").fill("admin@example.test");
-  await page.locator("#password").fill("test-only");
-  await page.locator("#loginButton").click();
-  await page.locator("#dashboard").waitFor({state:"visible"});
-  assert.equal(await page.locator("#totalProducts").innerText(),"1");
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.locator("#newProduct").click();
-  await page.locator('[name="name"]').fill("Example Admin Product");
-  await page.locator('[name="slug"]').fill("example-admin-product");
-  await page.locator('[name="price_idr"]').fill("250000");
-  await page.locator("#saveProduct").click();
-  await page.locator("#productDialog").waitFor({state:"hidden"});
-  await page.waitForFunction(()=>document.querySelector("#totalProducts").textContent==="2");
-  assert.equal(await page.locator("#totalProducts").innerText(),"2");
-  await page.locator('[data-edit="'+newId+'"]').click();
-  await page.locator("#zipFile").setInputFiles({name:"test.zip",mimeType:"application/zip",buffer:Buffer.from("PK\x03\x04synthetic")});
-  await page.locator("#uploadZip").click();
-  await page.waitForFunction(()=>document.querySelector("#zipStatus").textContent.includes("test.zip"));
-  assert.equal(assets.length,1);
-  await page.locator('[name="license_summary"]').fill("Lisensi contoh. Bukan produk siap dijual.");
-  await page.locator('[name="status"]').selectOption("published");
-  await page.locator("#saveProduct").click();
-  await page.locator("#productDialog").waitFor({state:"hidden"});
-  await page.waitForFunction(()=>document.querySelector("#publishedProducts").textContent==="1");
-  assert.equal(await page.locator("#publishedProducts").innerText(),"1");
-  assert.equal(products.find(p=>p.id===newId).status,"published");
-  await page.locator('[data-section="orders"]').click();
-  assert.ok((await page.locator("#orderRows").innerText()).includes("Belum ada pesanan"));
-  await page.locator("#logoutButton").click();
-  await page.locator("#loginScreen").waitFor({state:"visible"});
-  assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(k=>/token|auth/i.test(k))),false);
-  assert.equal(errors.length,0,errors.join("; "));
-  tested+=1;await page.close();
- }
- // A signed-in user without an admin membership can never see the dashboard.
- const {page}=await mockPage(browser,390,844,{admin:false});
- await page.goto(origin+"/admin.html",{waitUntil:"domcontentloaded"});
- await page.locator("#loginScreen").waitFor({state:"visible"});
- await page.locator("#email").fill("non-admin@example.test");
- await page.locator("#password").fill("test-only");
- await page.locator("#loginButton").click();
- await page.waitForFunction(()=>document.querySelector("#loginButton").disabled===false);
- assert.equal(await page.locator("#dashboard").isVisible(),false);
- await page.close();
- await browser.close();
- console.log("PASS: simulated Supabase Auth/RLS gates, CRUD, ZIP upload, publish and mobile layouts ("+tested+" viewports)");
-})().catch(err=>{console.error(err);process.exitCode=1});
+  const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+  let tested=0;
+  for(const [label,width,height] of [
+    ["desktop",1440,900],["tablet",768,1024],
+    ["mobile",390,844],["small",320,640]
+  ]) {
+    const page=await browser.newPage({viewport:{width,height}});
+    const errors=[];
+    page.on("pageerror",e=>errors.push(e.message));
+    page.on("dialog",async dialog=>dialog.accept());
+    await installMocks(page);
+    await page.goto(base+"/admin.html",{waitUntil:"domcontentloaded"});
+    await page.locator("#loginScreen").waitFor({state:"visible",timeout:18000});
+    await page.locator("#email").fill("admin@example.test");
+    await page.locator("#password").fill("TestPassword!");
+    await page.locator("#loginButton").click();
+    await page.locator("#dashboard").waitFor({state:"visible",timeout:15000});
+    assert.equal(await page.locator("#totalProducts").innerText(),"1",label+": initial draft");
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),
+      label+": no admin overflow");
+    await page.locator("#importDrafts").click();
+    await page.waitForFunction(()=>document.querySelector("#totalProducts").textContent==="6");
+    assert.equal(await page.locator("#draftProducts").innerText(),"6");
+    await page.locator("#newProduct").click();
+    await page.locator("#productDialog").waitFor({state:"visible"});
+    assert.equal(await page.locator('[name="status"] option[value="published"]').isDisabled(),true);
+    await page.locator('[name="name"]').fill("Market Demo Product");
+    await page.locator('[name="slug"]').fill("market-demo-product");
+    await page.locator('[name="price_idr"]').fill("250000");
+    await page.locator("#saveProduct").click();
+    await page.locator("#productDialog").waitFor({state:"hidden"});
+    await page.waitForFunction(()=>document.querySelector("#totalProducts").textContent==="7");
+    const row=page.locator("#productRows tr").filter({hasText:"Market Demo Product"});
+    await row.locator("[data-edit]").click();
+    await page.locator("#productDialog").waitFor({state:"visible"});
+    assert.equal(await page.locator("#zipUploader input[type=file]").count(),0);
+    assert.ok(await page.locator(".storage-warning").innerText().then(s=>s.includes("Blaze")));
+    await page.locator('[name="status"]').selectOption("archived");
+    await page.locator("#saveProduct").click();
+    await page.locator("#productDialog").waitFor({state:"hidden"});
+    await page.locator('[data-section="orders"]').click();
+    assert.ok((await page.locator("#orderRows").innerText()).includes("Belum ada pesanan"));
+    await page.locator("#logoutButton").click();
+    await page.locator("#loginScreen").waitFor({state:"visible"});
+    assert.equal(await page.evaluate(()=>
+      Object.keys(localStorage).some(k=>/firebase:authUser|supabase.auth.token/i.test(k))),false);
+    assert.deepEqual(errors,[],label+": errors");
+    tested++;
+    await page.close();
+  }
+
+  // A signed-in user without market_admins membership must be rejected.
+  const unauthorized=await browser.newPage({viewport:{width:390,height:844}});
+  await installMocks(unauthorized);
+  await unauthorized.goto(base+"/admin.html",{waitUntil:"domcontentloaded"});
+  await unauthorized.locator("#loginScreen").waitFor({state:"visible"});
+  await unauthorized.locator("#email").fill("nonadmin@example.test");
+  await unauthorized.locator("#password").fill("TestPassword!");
+  await unauthorized.locator("#loginButton").click();
+  await unauthorized.waitForFunction(()=>document.querySelector("#loginButton").disabled===false);
+  assert.equal(await unauthorized.locator("#dashboard").isVisible(),false);
+  await unauthorized.close();
+
+  // Public catalog must contain only published Firestore results.
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  await installMocks(page);
+  await page.goto(base+"/",{waitUntil:"domcontentloaded"});
+  await page.locator("#marketLive").waitFor({state:"visible",timeout:15000});
+  assert.equal(await page.locator(".live-card").count(),1);
+  await page.locator(".live-card").click();
+  await page.waitForURL("**/rilis.html?slug=example-release");
+  await page.locator("#releaseApp h1").waitFor({state:"visible"});
+  assert.equal(await page.locator("#releaseApp h1").innerText(),"Example Release");
+  assert.ok((await page.locator("#releaseApp").innerText()).includes("Belum dapat dibeli"));
+  await page.close();
+
+  await browser.close();
+  console.log("PASS: Firebase UI mock admin drafts, import, Auth gate and published read-only ("+
+    tested+" viewports)");
+})().catch(e=>{console.error(e);process.exitCode=1});
