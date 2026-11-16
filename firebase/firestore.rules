@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/market_admins/$(request.auth.uid));
+    }
+    function isPublished() {
+      return resource.data.status == 'published';
+    }
+    function validProduct() {
+      let p = request.resource.data;
+      return p.keys().hasOnly([
+          'name','slug','category','stack','description','price_idr',
+          'status','features','preview_path','license_summary',
+          'created_at','updated_at'
+        ]) &&
+        p.keys().hasAll([
+          'name','slug','category','stack','description','price_idr',
+          'status','features','preview_path','license_summary',
+          'created_at','updated_at'
+        ]) &&
+        p.name is string && p.name.size() >= 3 && p.name.size() <= 160 &&
+        p.slug is string && p.slug.size() <= 120 &&
+          p.slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$') &&
+        p.category is string && p.category.size() >= 2 && p.category.size() <= 60 &&
+        p.stack is string && p.stack.size() <= 300 &&
+        p.description is string && p.description.size() <= 5000 &&
+        p.price_idr is int && p.price_idr >= 0 && p.price_idr <= 1000000000 &&
+        p.status in ['draft','archived'] &&
+        p.features is list && p.features.size() <= 30 &&
+        p.preview_path is string && p.preview_path.size() <= 150 &&
+        (p.preview_path == '' ||
+          p.preview_path.matches('^/previews/[a-z0-9_-]+\\.svg$')) &&
+        p.license_summary is string && p.license_summary.size() <= 10000 &&
+        p.created_at is timestamp && p.updated_at is timestamp;
+    }
+
+    // Bootstrap an administrator ONLY through Firebase Console or Admin SDK.
+    // Browser users cannot create or edit their own role membership.
+    match /market_admins/{userId} {
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+
+    match /market_products/{productId} {
+      allow get: if isPublished() || isAdmin();
+      // Rules are not filters. Public clients MUST query status='published'
+      // and include limit(24); admin can read all drafts.
+      allow list: if isAdmin() ||
+        (isPublished() && request.query.limit != null && request.query.limit <= 24);
+      allow create: if isAdmin() && validProduct();
+      allow update: if isAdmin() && validProduct() &&
+        request.resource.data.created_at == resource.data.created_at;
+      // Archive instead of deleting.
+      allow delete: if false;
+    }
+
+    // Firestore is free-tier capable, but Firebase Storage requires Blaze.
+    // There is no ZIP upload/delivery implementation on the Spark plan.
+    match /market_assets/{assetId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // Payments and order creation are intentionally closed. A browser user
+    // must never be able to declare a transfer paid.
+    match /market_orders/{orderId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+    match /market_order_events/{eventId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
