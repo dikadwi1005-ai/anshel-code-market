@@ -93,14 +93,14 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
  await p.keyboard.press('/');
  assert.ok(await p.locator('#search').evaluate(el=>el===document.activeElement));
  // Admin and published-content pages must fail closed when unconfigured.
- await p.goto(base+'/admin.html',{waitUntil:'networkidle'});
+ await p.goto(base+'/admin.html',{waitUntil:'domcontentloaded'});
  await p.locator('#busyScreen').waitFor({state:'hidden',timeout:15000});
  const adminSetup=await p.locator('#setupScreen').isVisible();
  const adminLogin=await p.locator('#loginScreen').isVisible();
  assert.ok(adminSetup||adminLogin,'admin requires either setup or login');
  assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'admin no horizontal overflow');
  if(adminSetup)assert.ok(await p.locator('#setupScreen').innerText().then(s=>s.includes('Database marketplace belum terhubung.')));
- await p.goto(base+'/rilis.html?slug=does-not-exist',{waitUntil:'networkidle'});
+ await p.goto(base+'/rilis.html?slug=does-not-exist',{waitUntil:'domcontentloaded'});
  assert.ok(await p.locator('#releaseApp h1').isVisible());
  assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'release page no overflow');
  await browser.close();
