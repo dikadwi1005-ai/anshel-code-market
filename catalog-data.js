@@ -8,4 +8,4 @@ window.AnshelProducts = [
 {id:4,name:"Team Task Board",category:"Dashboard",kind:"operations",price:499000,stack:"React, JavaScript",desc:"Konsep pengelolaan tugas untuk tim kecil dan pekerjaan harian.",features:["Daftar tugas","Status pekerjaan","Ringkasan tim"]},
 {id:5,name:"Booking Calendar",category:"Website",kind:"booking",price:449000,stack:"HTML, CSS, JavaScript",desc:"Konsep kalender reservasi untuk usaha jasa dan studio.",features:["Tampilan kalender","Pilihan tanggal","Alur reservasi"]},
 {id:6,name:"Creative Portfolio",category:"Website",kind:"portfolio",price:299000,stack:"HTML, CSS",desc:"Konsep portofolio untuk freelancer dan studio kreatif.",features:["Galeri karya","Profil singkat","Halaman kontak"]}
-];;
+];
