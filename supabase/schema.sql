@@ -1,3 +1,7 @@
+-- DEPRECATED: ANSHEL CODE MARKET HAS MIGRATED TO FIREBASE/FIRESTORE.
+-- DO NOT EXECUTE THIS SCHEMA FOR THE MARKETPLACE.
+-- See firebase/firestore.rules and docs/firebase-setup.md instead.
+
 -- Anshel Code Market: foundation schema for a dedicated Supabase project.
 -- NOT applied until a separate project is created and explicitly selected.
 -- Run ONCE on a NEW dedicated project. It creates NO administrator or live orders.
