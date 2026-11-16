@@ -31,10 +31,14 @@
   } catch (error) {
     if (home && configured) {
       home.hidden = false;
-      document.getElementById("marketLiveGrid").innerHTML =
-        '<div class="live-empty"><strong>Data Firebase belum bisa dimuat.</strong>'+
-        '<p>Katalog konsep lama masih tersedia di bawah. Periksa aturan keamanan Firestore '+
-        'dan koneksi proyek Anshel Code Market.</p></div>';
+      const rulesBlocked = /Firestore Security Rules/i.test(String(error?.message || ""));
+      document.getElementById("marketLiveGrid").innerHTML = rulesBlocked
+        ? '<div class="live-empty"><strong>Pratinjau Firebase belum bisa ditampilkan.</strong>'+
+          '<p>Aturan baca untuk pratinjau publik belum aktif di Firestore. '+
+          'Katalog konsep lama masih tersedia di bawah, tanpa pembelian.</p></div>'
+        : '<div class="live-empty"><strong>Data Firebase belum bisa dimuat.</strong>'+
+          '<p>Katalog konsep lama masih tersedia di bawah. Periksa koneksi '+
+          'proyek Firebase Anshel Code Market.</p></div>';
       document.querySelector(".live-controls").hidden = true;
     }
     if (detail) {
