@@ -6,6 +6,7 @@ const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
 async function revealLegacy(page){
+  if(!['/','/index.html'].includes(new URL(page.url()).pathname))return;
   // Keep the original six-example regression path testable after Firestore
   // becomes the main public catalog. The toggle must be explicit on that site.
   const configured=await page.evaluate(async()=>{
