@@ -1,55 +1,61 @@
-name: Frontend smoke tests
-
+name: Next.js build and browser smoke
 on:
   push:
-    branches: [main]
+    branches: [main, feat/nextjs-market-image-fix]
     paths:
-      - '*.html'
-      - '*.js'
-      - '*.css'
-      - 'previews/**'
-      - 'api/**'
-      - 'supabase/**'
-      - 'firebase/**'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'next.config.ts'
       - 'tests/**'
       - '.github/workflows/frontend-smoke.yml'
   pull_request:
     paths:
-      - '*.html'
-      - '*.js'
-      - '*.css'
-      - 'previews/**'
-      - 'api/**'
-      - 'supabase/**'
-      - 'firebase/**'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'package.json'
+      - 'next.config.ts'
       - 'tests/**'
       - '.github/workflows/frontend-smoke.yml'
-
+permissions:
+  contents: read
 jobs:
-  browser:
-    name: Chromium desktop, tablet and mobile
+  next-browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - name: Install Playwright
-        working-directory: tests
-        run: npm install --no-save playwright
-      - name: Install Chromium
-        working-directory: tests
-        run: npx playwright install --with-deps chromium
-      - name: Start local static site
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build Next.js
+        run: npm run build
+      - name: Install browser test tooling
         run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/anshel-static.log 2>&1 &
-          sleep 2
-      - name: Check catalog, detail, saved items and comparisons
+          npm install --no-save playwright --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Start Next server
+        run: |
+          npm run start -- -p 4173 >/tmp/anshel-next.log 2>&1 &
+          echo $! > /tmp/anshel-next.pid
+          for i in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/anshel-next.log
+          exit 1
+      - name: Browser smoke tests
         env:
           BASE_URL: http://127.0.0.1:4173
-        run: node tests/smoke.cjs
-      - name: Validate simulated Firebase admin workflow
-        env:
-          BASE_URL: http://127.0.0.1:4173
-        run: node tests/admin-mock.cjs
+        run: node tests/next-smoke.cjs
