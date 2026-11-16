@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Locked: Cloud Storage for Firebase requires the Blaze plan.
+    // No ZIP upload, paid download or public object is enabled.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
