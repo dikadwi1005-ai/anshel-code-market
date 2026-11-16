@@ -22,8 +22,9 @@ module.exports = function handler(req, res) {
   if (!firebase.apiKey || !/^[a-z0-9-]+$/.test(firebase.projectId) ||
       firebase.authDomain !== firebase.projectId + ".firebaseapp.com" ||
       !/^\d+:[^:]+:web:[A-Za-z0-9_-]+$/.test(firebase.appId)) {
-    return res.status(503).json({
+    return res.status(200).json({
       provider: "firebase", configured: false,
+      storageEnabled: false, ordersEnabled: false, paymentsEnabled: false,
       message: "Firebase khusus Anshel Market belum dikonfigurasi."
     });
   }
