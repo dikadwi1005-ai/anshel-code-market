@@ -105,4 +105,4 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
  assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'release page no overflow');
  await browser.close();
  console.log('PASS: '+total+' viewport flows + Mandiri checkout, admin setup, published product safety and history');
-})().catch(err=>{console.error(err);process.exitCode=1});
+})().catch(err=>{console.error(err);process.exit(1)});
