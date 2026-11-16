@@ -8,8 +8,8 @@ service cloud.firestore {
       return signedIn() &&
         exists(/databases/$(database)/documents/market_admins/$(request.auth.uid));
     }
-    function isPublished() {
-      return resource.data.status == 'published';
+    function publicPreview() {
+      return resource.data.status in ['preview', 'published'];
     }
     function validProduct() {
       let p = request.resource.data;
@@ -30,7 +30,7 @@ service cloud.firestore {
         p.stack is string && p.stack.size() <= 300 &&
         p.description is string && p.description.size() <= 5000 &&
         p.price_idr is int && p.price_idr >= 0 && p.price_idr <= 1000000000 &&
-        p.status in ['draft','archived'] &&
+        p.status in ['draft','preview','archived'] &&
         p.features is list && p.features.size() <= 30 &&
         p.preview_path is string && p.preview_path.size() <= 150 &&
         (p.preview_path == '' ||
@@ -39,6 +39,7 @@ service cloud.firestore {
         p.created_at is timestamp && p.updated_at is timestamp;
     }
 
+    // Preview means public visibility ONLY: payments and ZIP are still disabled.
     // Bootstrap an administrator ONLY through Firebase Console or Admin SDK.
     // Browser users cannot create or edit their own role membership.
     match /market_admins/{userId} {
@@ -47,11 +48,11 @@ service cloud.firestore {
     }
 
     match /market_products/{productId} {
-      allow get: if isPublished() || isAdmin();
-      // Rules are not filters. Public clients MUST query status='published'
-      // and include limit(24); admin can read all drafts.
+      allow get: if publicPreview() || isAdmin();
+      // Rules are not filters. Public clients MUST query only
+      // status='preview' or 'published' with limit(24); drafts remain private.
       allow list: if isAdmin() ||
-        (isPublished() && request.query.limit != null && request.query.limit <= 24);
+        (publicPreview() && request.query.limit != null && request.query.limit <= 24);
       allow create: if isAdmin() && validProduct();
       allow update: if isAdmin() && validProduct() &&
         request.resource.data.created_at == resource.data.created_at;
