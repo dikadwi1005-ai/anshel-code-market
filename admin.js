@@ -1,226 +1,299 @@
-// Anshel Market administrator UI. Uses Supabase Auth + PostgREST with an
-// exclusively PUBLISHABLE key. Session tokens are kept only in memory.
-// Database RLS is the authorization boundary, not this browser UI.
-const $=id=>document.getElementById(id);
-const fmt=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n)||0);
-const escapeHTML=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const state={config:null,session:null,products:[],assets:[],orders:[],editingId:null,busy:false,refreshing:null};
-const allSections=["busyScreen","setupScreen","loginScreen","dashboard"];
-function showOnly(id){for(const key of allSections)$(key).hidden=key!==id}
-function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("visible");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("visible"),3800)}
-function explain(error){return error instanceof Error?error.message:String(error)}
-async function parseResponse(res){
-  const body=await res.json().catch(()=>null);
-  if(!res.ok)throw new Error(body?.message||body?.msg||body?.error_description||body?.error||"Permintaan gagal ("+res.status+").");
-  return body;
+// Anshel Code Market administrator UI — Firebase Authentication + Firestore.
+// No service account, privileged key, live payment, or ZIP delivery runs here.
+// Firestore Security Rules MUST be installed before this UI is used.
+const $ = id => document.getElementById(id);
+const fmt = value => new Intl.NumberFormat("id-ID", {
+  style: "currency", currency: "IDR", maximumFractionDigits: 0
+}).format(Number(value) || 0);
+const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const state = {
+  client: null, admin: null, products: [], assets: [], orders: [],
+  editingId: null, busy: false
+};
+const screens = ["busyScreen","setupScreen","loginScreen","dashboard"];
+function showOnly(id) {
+  for (const screen of screens) $(screen).hidden = screen !== id;
 }
-async function authRequest(path,body){
-  const res=await fetch(state.config.url+"/auth/v1/"+path,{
-    method:"POST",headers:{"Content-Type":"application/json","apikey":state.config.publishableKey},
-    body:JSON.stringify(body),cache:"no-store"
-  });
-  return parseResponse(res);
+function toast(message) {
+  const el = $("toast");
+  el.textContent = message;
+  el.classList.add("visible");
+  clearTimeout(toast.handle);
+  toast.handle = setTimeout(() => el.classList.remove("visible"), 3800);
 }
-async function ensureSession(){
-  if(!state.session)throw Error("Sesi berakhir. Silakan masuk kembali.");
-  if(Date.now()<state.session.expiresAt-45000)return;
-  if(!state.refreshing){
-    state.refreshing=(async()=>{
-      const next=await authRequest("token?grant_type=refresh_token",{refresh_token:state.session.refreshToken});
-      state.session={accessToken:next.access_token,refreshToken:next.refresh_token,expiresAt:Date.now()+next.expires_in*1000,email:state.session.email};
-    })().finally(()=>{state.refreshing=null});
-  }
-  await state.refreshing;
+function explain(error) {
+  const code = error?.code || "";
+  if (["auth/invalid-credential","auth/wrong-password","auth/user-not-found"].includes(code))
+    return "Email atau kata sandi admin tidak sesuai.";
+  if (code === "permission-denied")
+    return "Akses ditolak oleh Firestore. Periksa akun admin dan Security Rules.";
+  if (code === "auth/operation-not-allowed")
+    return "Login Email/Password belum diaktifkan pada Firebase Authentication.";
+  return error instanceof Error ? error.message : String(error);
 }
-async function api(path,{method="GET",body=null,headers={}}={}){
-  await ensureSession();
-  const result=await fetch(state.config.url+path,{
-    method,
-    headers:{"apikey":state.config.publishableKey,"Authorization":"Bearer "+state.session.accessToken,
-      ...(body!==null?{"Content-Type":"application/json"}:{}),...headers},
-    body:body===null?undefined:JSON.stringify(body),
-    cache:"no-store"
-  });
-  return parseResponse(result);
-}
-async function connect(){
+async function connect() {
   showOnly("busyScreen");
-  try{
-    const res=await fetch("/api/market-config",{cache:"no-store"});
-    if(!res.ok)throw Error("Proyek Supabase belum dikonfigurasi pada Vercel.");
-    const config=await parseResponse(res);
-    if(!config.configured||!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!config.publishableKey?.startsWith("sb_publishable_")){
-      throw Error("Konfigurasi Supabase belum lengkap.");
-    }
-    state.config=config;
+  try {
+    const r = await fetch("/api/market-config", {
+      cache: "no-store", signal: AbortSignal.timeout(11000)
+    });
+    const config = await r.json().catch(() => ({}));
+    if (!r.ok || config.provider !== "firebase" || !config.configured ||
+        !config.firebase?.projectId || !config.firebase?.apiKey)
+      throw Error("Firebase khusus Anshel Market belum dikonfigurasi di Vercel.");
+    const { openFirebase } = await import("./firebase-client.js");
+    state.client = await openFirebase(config.firebase, { administrator: true });
     showOnly("loginScreen");
-  }catch(e){state.config=null;showOnly("setupScreen");toast(explain(e))}
-}
-async function enterDashboard(){
-  const rows=await api("/rest/v1/market_admins?select=user_id&limit=1");
-  if(!Array.isArray(rows)||rows.length===0){
-    state.session=null;
-    throw Error("Akun ini belum diberikan hak admin. Tidak ada akses produk.");
+  } catch (error) {
+    state.client = null;
+    showOnly("setupScreen");
+    toast(explain(error));
   }
-  $("accountEmail").textContent=state.session.email;
-  await reloadAll();
-  showOnly("dashboard");
 }
-async function login(event){
+async function login(event) {
   event.preventDefault();
-  if(state.busy)return;
-  state.busy=true;$("loginButton").disabled=true;$("loginButton").textContent="Memverifikasi…";
-  try{
-    const email=$("email").value.trim(),password=$("password").value;
-    const res=await authRequest("token?grant_type=password",{email,password});
-    $("password").value="";
-    state.session={accessToken:res.access_token,refreshToken:res.refresh_token,
-      expiresAt:Date.now()+res.expires_in*1000,email};
-    await enterDashboard();
-    toast("Dashboard terhubung ke Supabase.");
-  }catch(e){state.session=null;$("password").value="";showOnly("loginScreen");toast(explain(e))}
-  finally{state.busy=false;$("loginButton").disabled=false;$("loginButton").textContent="Masuk"}
-}
-async function logout(){
-  if(state.session){
-    try{await api("/auth/v1/logout",{method:"POST"})}catch{}
+  if (state.busy || !state.client) return;
+  state.busy = true;
+  $("loginButton").disabled = true;
+  $("loginButton").textContent = "Memverifikasi…";
+  try {
+    const email = $("email").value.trim();
+    const password = $("password").value;
+    const user = await state.client.signIn(email, password);
+    $("password").value = "";
+    if (!(await state.client.isAdmin(user.uid))) {
+      await state.client.signOut();
+      throw Error("Akun ini belum memiliki hak admin. Minta akses melalui Firebase Console.");
+    }
+    state.admin = user;
+    $("accountEmail").textContent = user.email || "Administrator";
+    await reloadAll();
+    showOnly("dashboard");
+    toast("Data admin berhasil dimuat dari Firestore.");
+  } catch (error) {
+    state.admin = null;
+    $("password").value = "";
+    showOnly("loginScreen");
+    toast(explain(error));
+  } finally {
+    state.busy = false;
+    $("loginButton").disabled = false;
+    $("loginButton").textContent = "Masuk";
   }
-  state.session=null;state.products=[];state.assets=[];state.orders=[];state.editingId=null;
-  $("productDialog").close?.();$("password").value="";showOnly("loginScreen");toast("Sesi admin ditutup.");
 }
-async function reloadAll(){
-  const [products,assets,orders]=await Promise.all([
-    api("/rest/v1/market_products?select=*&order=created_at.desc"),
-    api("/rest/v1/market_assets?select=*&order=uploaded_at.desc"),
-    api("/rest/v1/market_orders?select=id,product_id,amount_idr,status,created_at&order=created_at.desc&limit=50")
+async function logout() {
+  try { await state.client?.signOut(); } catch {}
+  Object.assign(state, {
+    admin: null, products: [], assets: [], orders: [], editingId: null
+  });
+  if ($("productDialog").open) $("productDialog").close();
+  $("password").value = "";
+  showOnly("loginScreen");
+  toast("Sesi admin ditutup.");
+}
+function requireAdmin() {
+  if (!state.admin || !state.client) throw Error("Silakan masuk sebagai admin.");
+}
+async function reloadAll() {
+  requireAdmin();
+  const [products, assets, orders] = await Promise.all([
+    state.client.listProducts(), state.client.listAssets(), state.client.listOrders()
   ]);
-  state.products=Array.isArray(products)?products:[];
-  state.assets=Array.isArray(assets)?assets:[];
-  state.orders=Array.isArray(orders)?orders:[];
-  renderStats();renderProducts();renderOrders();
+  state.products = products;
+  state.assets = assets;
+  state.orders = orders;
+  renderStats(); renderProducts(); renderOrders();
 }
-function renderStats(){
-  $("totalProducts").textContent=state.products.length;
-  $("draftProducts").textContent=state.products.filter(p=>p.status==="draft").length;
-  $("publishedProducts").textContent=state.products.filter(p=>p.status==="published").length;
-  $("totalOrders").textContent=state.orders.length;
+function renderStats() {
+  $("totalProducts").textContent = state.products.length;
+  $("draftProducts").textContent =
+    state.products.filter(p => p.status === "draft").length;
+  $("publishedProducts").textContent =
+    state.products.filter(p => p.status === "published").length;
+  $("totalOrders").textContent = state.orders.length;
 }
-function renderProducts(){
-  const query=$("productSearch").value.trim().toLocaleLowerCase("id");
-  const status=$("statusFilter").value;
-  const found=state.products.filter(p=>(!status||p.status===status)&&
-     (p.name+" "+p.category+" "+p.stack+" "+p.slug).toLocaleLowerCase("id").includes(query));
-  $("productRows").innerHTML=found.length?found.map(p=>{
-    const uploaded=state.assets.find(a=>a.product_id===p.id);
-    return '<tr><td><strong>'+escapeHTML(p.name)+'</strong><small>'+escapeHTML(p.category)+' · '+escapeHTML(p.stack)+'</small></td>'+
-      '<td>'+fmt(p.price_idr)+'</td><td><span class="status '+escapeHTML(p.status)+'">'+escapeHTML(p.status)+'</span></td>'+
-      '<td>'+(uploaded?'<span class="status published">ZIP privat tersedia</span><small>'+escapeHTML(uploaded.original_filename)+'</small>':'<span class="status">Belum diunggah</span>')+'</td>'+
-      '<td><div class="row-actions"><button type="button" data-edit="'+p.id+'">Edit</button>'+
-      (p.status!=="archived"?'<button type="button" data-archive="'+p.id+'">Arsipkan</button>':'')+'</div></td></tr>';
-  }).join(""):'<tr><td colspan="5" class="empty-row">Belum ada produk yang cocok.</td></tr>';
+function renderProducts() {
+  const search = $("productSearch").value.trim().toLocaleLowerCase("id");
+  const status = $("statusFilter").value;
+  const found = state.products.filter(p =>
+    (!status || p.status === status) &&
+    [p.name,p.category,p.stack,p.slug].join(" ").toLocaleLowerCase("id").includes(search)
+  );
+  $("productRows").innerHTML = found.length ? found.map(p => {
+    const asset = state.assets.find(a => a.product_id === p.id);
+    return '<tr><td><strong>'+escapeHTML(p.name)+'</strong><small>'+
+      escapeHTML(p.category)+' · '+escapeHTML(p.stack)+'</small></td>'+
+      '<td>'+fmt(p.price_idr)+'</td>'+
+      '<td><span class="status '+escapeHTML(p.status)+'">'+escapeHTML(p.status)+'</span></td>'+
+      '<td>'+(asset?'<span class="status published">Arsip tercatat</span>':
+                    '<span class="status">Belum tersedia</span>')+'</td>'+
+      '<td><div class="row-actions"><button type="button" data-edit="'+
+      escapeHTML(p.id)+'">Edit</button>'+
+      (p.status !== "archived" ? '<button type="button" data-archive="'+
+      escapeHTML(p.id)+'">Arsipkan</button>' : '')+'</div></td></tr>';
+  }).join("") : '<tr><td colspan="5" class="empty-row">Belum ada produk yang cocok.</td></tr>';
 }
-function renderOrders(){
-  const rows=state.orders.slice(0,50);
-  $("orderRows").innerHTML=rows.length?rows.map(o=>{
-    const p=state.products.find(item=>item.id===o.product_id);
-    return '<tr><td><strong>'+escapeHTML(o.id.slice(0,8))+'</strong></td><td>'+escapeHTML(p?.name||"Produk")+'</td>'+
-       '<td>'+fmt(o.amount_idr)+'</td><td><span class="status">'+escapeHTML(o.status)+'</span></td>'+
-       '<td>'+escapeHTML(new Date(o.created_at).toLocaleString("id-ID"))+'</td></tr>';
-  }).join(""):'<tr><td colspan="5" class="empty-row">Belum ada pesanan. Checkout transfer Mandiri masih dinonaktifkan.</td></tr>';
+function renderOrders() {
+  $("orderRows").innerHTML = state.orders.length ? state.orders.slice(0,50).map(o=>{
+    const item = state.products.find(p => p.id === o.product_id);
+    const date = o.created_at ? new Date(o.created_at).toLocaleString("id-ID") : "—";
+    return '<tr><td><strong>'+escapeHTML(String(o.id).slice(0,8))+'</strong></td>'+
+      '<td>'+escapeHTML(item?.name || "Produk")+'</td>'+
+      '<td>'+fmt(o.amount_idr)+'</td>'+
+      '<td><span class="status">'+escapeHTML(o.status || "pending")+'</span></td>'+
+      '<td>'+escapeHTML(date)+'</td></tr>';
+  }).join("") :
+    '<tr><td colspan="5" class="empty-row">Belum ada pesanan. Pembayaran Mandiri belum diaktifkan.</td></tr>';
 }
-function setSection(which){
-  $("productsSection").hidden=which!=="products";$("ordersSection").hidden=which!=="orders";
+function setSection(section) {
+  $("productsSection").hidden = section !== "products";
+  $("ordersSection").hidden = section !== "orders";
   document.querySelectorAll("[data-section]").forEach(btn=>{
-    const on=btn.dataset.section===which;btn.classList.toggle("active",on);btn.setAttribute("aria-pressed",String(on));
+    const active = btn.dataset.section === section;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
   });
 }
-function field(name){return $("productForm").elements.namedItem(name)}
-function openEditor(p=null){
-  state.editingId=p?.id||null;$("productForm").reset();
-  for(const name of ["name","slug","category","stack","description","preview_path","license_summary","status"]){
-    if(p&&p[name]!==undefined)field(name).value=p[name];
+function field(name) { return $("productForm").elements.namedItem(name); }
+function openEditor(product = null) {
+  state.editingId = product?.id || null;
+  $("productForm").reset();
+  for (const name of [
+    "name","slug","category","stack","description",
+    "preview_path","license_summary","status"
+  ]) {
+    if (product && product[name] !== undefined) field(name).value = product[name];
   }
-  field("price_idr").value=p?.price_idr??0;
-  field("features").value=Array.isArray(p?.features)?p.features.join("\n"):"";
-  $("editorHeading").textContent=p?"Edit produk":"Tambah produk";
-  $("zipUploader").hidden=!p;
-  const asset=p?state.assets.find(a=>a.product_id===p.id):null;
-  $("zipStatus").textContent=asset?"ZIP tersimpan: "+asset.original_filename:"Belum ada ZIP privat untuk produk ini.";
-  $("zipFile").value="";
+  field("price_idr").value = product?.price_idr ?? 0;
+  field("features").value = Array.isArray(product?.features)
+    ? product.features.join("\n") : "";
+  $("editorHeading").textContent = product ? "Edit produk" : "Tambah produk";
+  $("zipUploader").hidden = !product;
+  $("zipStatus").textContent = "Belum ada ZIP privat. Firebase Storage memerlukan paket Blaze.";
   $("productDialog").showModal();
 }
-function closeEditor(){if($("productDialog").open)$("productDialog").close()}
-async function saveProduct(event){
-  event.preventDefault();if(state.busy)return;state.busy=true;$("saveProduct").disabled=true;
-  try{
-    const value={name:field("name").value.trim(),slug:field("slug").value.trim(),
-      category:field("category").value,stack:field("stack").value.trim(),
-      description:field("description").value.trim(),price_idr:Number(field("price_idr").value),
-      status:field("status").value,preview_path:field("preview_path").value.trim(),
-      license_summary:field("license_summary").value.trim(),
-      features:field("features").value.split("\n").map(s=>s.trim()).filter(Boolean)};
-    if(!value.name||!value.slug||!Number.isSafeInteger(value.price_idr)||value.price_idr<0)throw Error("Periksa nama, slug, dan nominal harga.");
-    if(value.status==="published"){
-      const hasZip=state.assets.some(a=>a.product_id===state.editingId);
-      if(!hasZip||!value.license_summary||value.price_idr<=0)throw Error("Untuk menerbitkan produk, tambahkan ZIP privat, lisensi, dan harga final terlebih dahulu.");
-    }
-    const path=state.editingId?"/rest/v1/market_products?id=eq."+state.editingId:"/rest/v1/market_products";
-    await api(path,{method:state.editingId?"PATCH":"POST",body:value,headers:{"Prefer":"return=representation"}});
-    closeEditor();await reloadAll();toast("Perubahan produk tersimpan di Supabase.");
-  }catch(e){toast("Gagal menyimpan: "+explain(e))}
-  finally{state.busy=false;$("saveProduct").disabled=false}
+function closeEditor() {
+  if ($("productDialog").open) $("productDialog").close();
 }
-async function archiveProduct(id){
-  const p=state.products.find(item=>item.id===id);if(!p)return;
-  if(!confirm('Arsipkan produk "'+p.name+'"? Produk yang diterbitkan akan berhenti tampil sebagai rilis.'))return;
-  try{await api("/rest/v1/market_products?id=eq."+id,{method:"PATCH",body:{status:"archived"},headers:{"Prefer":"return=representation"}});
-    await reloadAll();toast("Produk diarsipkan.");
-  }catch(e){toast("Gagal mengarsipkan: "+explain(e))}
+function getFormData() {
+  const obj = {
+    name: field("name").value.trim(),
+    slug: field("slug").value.trim(),
+    category: field("category").value,
+    stack: field("stack").value.trim(),
+    description: field("description").value.trim(),
+    price_idr: Number(field("price_idr").value),
+    status: field("status").value,
+    preview_path: field("preview_path").value.trim(),
+    license_summary: field("license_summary").value.trim(),
+    features: field("features").value.split("\n").map(s=>s.trim()).filter(Boolean)
+  };
+  if (obj.name.length < 3 || obj.name.length > 160 ||
+      !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(obj.slug) ||
+      obj.slug.length > 120 ||
+      !Number.isSafeInteger(obj.price_idr) || obj.price_idr < 0 ||
+      obj.price_idr > 1000000000)
+    throw Error("Periksa nama, slug dan harga produk.");
+  if (!["draft","archived"].includes(obj.status))
+    throw Error("Publikasi dikunci hingga ZIP privat dan pembayaran siap.");
+  if (obj.features.length > 30)
+    throw Error("Maksimum 30 fitur per produk.");
+  if (obj.preview_path &&
+      !/^\/previews\/[a-z0-9_-]+\.svg$/.test(obj.preview_path))
+    throw Error("Preview hanya boleh berasal dari folder /previews/*.svg.");
+  return obj;
 }
-async function uploadZip(){
-  const file=$("zipFile").files?.[0],id=state.editingId;
-  if(!id){toast("Simpan produk lebih dulu.");return}
-  if(!file||!file.name.toLowerCase().endsWith(".zip")){toast("Pilih arsip .zip yang sah.");return}
-  if(file.size<=0||file.size>50*1024*1024){toast("Ukuran ZIP harus antara 1 byte dan 50 MB.");return}
-  if(state.busy)return;
-  state.busy=true;$("uploadZip").disabled=true;$("uploadZip").textContent="Mengunggah…";
-  try{
-    await ensureSession();
-    const path=id+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,10)+".zip";
-    const res=await fetch(state.config.url+"/storage/v1/object/anshel-source-packages/"+path,{
-      method:"POST",headers:{"apikey":state.config.publishableKey,
-      "Authorization":"Bearer "+state.session.accessToken,
-      "Content-Type":"application/zip","x-upsert":"false"},body:file
-    });
-    await parseResponse(res);
-    try{
-      await api("/rest/v1/market_assets?on_conflict=product_id",{
-        method:"POST",
-        headers:{"Prefer":"resolution=merge-duplicates,return=representation"},
-        body:{product_id:id,object_path:path,original_filename:file.name,file_size_bytes:file.size}
-      });
-    }catch(e){throw Error("ZIP terunggah, tetapi metadata gagal disimpan; periksa bucket privat sebelum mencoba kembali. "+explain(e))}
-    await reloadAll();$("zipStatus").textContent="ZIP tersimpan: "+file.name;$("zipFile").value="";
-    toast("ZIP tersimpan pada Supabase Storage privat.");
-  }catch(e){toast("Gagal mengunggah: "+explain(e))}
-  finally{state.busy=false;$("uploadZip").disabled=false;$("uploadZip").textContent="Unggah ZIP"}
+async function saveProduct(event) {
+  event.preventDefault();
+  if (state.busy) return;
+  state.busy = true;
+  $("saveProduct").disabled = true;
+  try {
+    requireAdmin();
+    const value = getFormData();
+    await state.client.saveProduct(value, state.editingId);
+    closeEditor();
+    await reloadAll();
+    toast("Perubahan draft tersimpan di Firestore.");
+  } catch (error) {
+    toast("Gagal menyimpan: "+explain(error));
+  } finally {
+    state.busy = false;
+    $("saveProduct").disabled = false;
+  }
 }
-$("retryConnection").addEventListener("click",connect);
-$("loginForm").addEventListener("submit",login);
-$("logoutButton").addEventListener("click",logout);
-$("productSearch").addEventListener("input",renderProducts);
-$("statusFilter").addEventListener("change",renderProducts);
-$("newProduct").addEventListener("click",()=>openEditor());
-$("reloadProducts").addEventListener("click",async()=>{try{await reloadAll();toast("Data produk diperbarui.")}catch(e){toast(explain(e))}});
-$("reloadOrders").addEventListener("click",async()=>{try{await reloadAll();toast("Daftar pesanan diperbarui.")}catch(e){toast(explain(e))}});
-document.querySelectorAll("[data-section]").forEach(btn=>btn.addEventListener("click",()=>setSection(btn.dataset.section)));
-$("productRows").addEventListener("click",e=>{
-  const edit=e.target.closest("[data-edit]"),archive=e.target.closest("[data-archive]");
-  if(edit)openEditor(state.products.find(p=>p.id===edit.dataset.edit));
-  if(archive)archiveProduct(archive.dataset.archive);
+async function archiveProduct(id) {
+  const product = state.products.find(p => p.id === id);
+  if (!product || state.busy) return;
+  if (!confirm('Arsipkan produk "'+product.name+'"?')) return;
+  state.busy = true;
+  try {
+    requireAdmin();
+    await state.client.archiveProduct(id);
+    await reloadAll();
+    toast("Produk diarsipkan.");
+  } catch (error) {
+    toast("Gagal mengarsipkan: "+explain(error));
+  } finally {
+    state.busy = false;
+  }
+}
+async function importDrafts() {
+  const previews = window.AnshelProducts || [];
+  if (!previews.length || state.busy) return;
+  if (!confirm("Impor enam konsep katalog sebagai draft Firestore? Tidak ada produk yang diterbitkan.")) return;
+  state.busy = true;
+  $("importDrafts").disabled = true;
+  try {
+    requireAdmin();
+    const items = previews.map(p=>({
+      name:p.name,
+      slug:p.name.toLowerCase().normalize("NFKD")
+        .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""),
+      category:p.category,
+      stack:p.stack,
+      description:p.desc,
+      price_idr:p.price,
+      features:[...p.features],
+      preview_path:"/previews/"+p.kind+".svg",
+      license_summary:"",
+      status:"draft"
+    }));
+    const count = await state.client.importDrafts(items);
+    await reloadAll();
+    toast(count+" produk konsep ditambahkan sebagai draft.");
+  } catch (error) {
+    toast("Impor gagal: "+explain(error));
+  } finally {
+    state.busy = false;
+    $("importDrafts").disabled = false;
+  }
+}
+$("retryConnection").addEventListener("click", connect);
+$("loginForm").addEventListener("submit", login);
+$("logoutButton").addEventListener("click", logout);
+$("productSearch").addEventListener("input", renderProducts);
+$("statusFilter").addEventListener("change", renderProducts);
+$("newProduct").addEventListener("click", ()=>openEditor());
+$("importDrafts").addEventListener("click", importDrafts);
+$("reloadProducts").addEventListener("click", async()=>{
+  try { await reloadAll(); toast("Produk dimuat ulang."); }
+  catch (error) { toast(explain(error)); }
 });
-$("closeEditor").addEventListener("click",closeEditor);
-$("cancelEditor").addEventListener("click",closeEditor);
-$("productForm").addEventListener("submit",saveProduct);
-$("uploadZip").addEventListener("click",uploadZip);
+$("reloadOrders").addEventListener("click", async()=>{
+  try { await reloadAll(); toast("Pesanan dimuat ulang."); }
+  catch (error) { toast(explain(error)); }
+});
+document.querySelectorAll("[data-section]").forEach(btn=>
+  btn.addEventListener("click", ()=>setSection(btn.dataset.section)));
+$("productRows").addEventListener("click", event=>{
+  const edit = event.target.closest("[data-edit]");
+  const archive = event.target.closest("[data-archive]");
+  if (edit) openEditor(state.products.find(p=>p.id===edit.dataset.edit));
+  if (archive) archiveProduct(archive.dataset.archive);
+});
+$("closeEditor").addEventListener("click", closeEditor);
+$("cancelEditor").addEventListener("click", closeEditor);
+$("productForm").addEventListener("submit", saveProduct);
 connect();
