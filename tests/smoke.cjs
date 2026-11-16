@@ -14,7 +14,7 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
    await page.goto(base,{waitUntil:'load',timeout:30000});
    assert.equal(await page.locator('.product').count(),6,label+': catalog count');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+': no overflow on catalog');
-   assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.preview-image')].every(x=>x.complete&&x.naturalWidth>0)),label+': previews load');
+   assert.ok(await page.evaluate(async()=>{const list=[...document.querySelectorAll('.preview-image')];await Promise.all(list.map(async img=>{img.loading='eager';try{await img.decode()}catch{}}));return list.every(img=>img.naturalWidth>0)}),label+': previews available');
    await page.locator('.product .p-title a').first().click();
    await page.waitForURL('**/produk.html?id=1');
    assert.equal(await page.locator('h1').innerText(),'Company Profile Starter');
