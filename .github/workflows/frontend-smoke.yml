@@ -1,0 +1,45 @@
+name: Frontend smoke tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'previews/**'
+      - 'tests/**'
+      - '.github/workflows/frontend-smoke.yml'
+  pull_request:
+    paths:
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'previews/**'
+      - 'tests/**'
+      - '.github/workflows/frontend-smoke.yml'
+
+jobs:
+  browser:
+    name: Chromium desktop, tablet and mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        working-directory: tests
+        run: npm install --no-save playwright
+      - name: Install Chromium
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+      - name: Start local static site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/anshel-static.log 2>&1 &
+          sleep 2
+      - name: Check catalog, detail, saved items and comparisons
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: node tests/smoke.cjs
