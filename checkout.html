@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="robots" content="noindex,follow">
+<meta name="description" content="Pratinjau rencana checkout Anshel Market. Pembayaran belum diaktifkan karena produk masih berupa konsep.">
+<title>Pratinjau Checkout — Anshel Market</title>
+<link rel="stylesheet" href="/produk.css">
+<style>
+.checkout-layout{padding-top:31px;padding-bottom:80px;min-height:65vh}
+.checkout-breadcrumb{font-size:12px;color:#7b8a9b;margin:0 0 25px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.checkout-breadcrumb a{color:#3869bc}
+.checkout-heading{margin-bottom:27px}
+.checkout-heading h1{font-size:clamp(30px,3.2vw,43px);line-height:1.12;letter-spacing:-1.5px;margin:0 0 9px;color:#1c2e42}
+.checkout-heading p{margin:0;color:#738195;font-size:14px;line-height:1.8;max-width:770px}
+.checkout-preview-badge{display:inline-flex;align-items:center;gap:8px;background:#fff4dd;border:1px solid #eed9aa;color:#775825;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.015em;padding:9px 12px;margin-bottom:18px}
+.checkout-columns{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(310px,.75fr);gap:25px;align-items:start}
+.checkout-card{border:1px solid #e1e7ef;background:#fff;border-radius:16px;box-shadow:0 6px 24px #19283f08;overflow:hidden}
+.checkout-card-header{padding:24px 26px 16px;border-bottom:1px solid #edf0f4}
+.checkout-card h2{font-size:19px;font-weight:820;letter-spacing:-.45px;color:#1e3248;margin:0 0 8px}
+.checkout-card-header p{font-size:12px;line-height:1.7;color:#77869a;margin:0}
+.methods{padding:17px;display:grid;gap:10px}
+.method{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:13px;align-items:start;padding:18px;border:1px solid #e0e5ed;border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s}
+.method:has(input:checked){background:#f5f8ff;border-color:#3e74d8;box-shadow:0 0 0 1px #3e74d8}
+.method:focus-within{outline:2px solid #497de3;outline-offset:2px}
+.method input{width:17px;height:17px;margin:3px 0 0;accent-color:#3169d1}
+.method-main{min-width:0}
+.method-main strong{display:block;font-size:14px;line-height:1.45;color:#24364c}
+.method-main span{display:block;color:#728295;font-size:12px;line-height:1.7;margin-top:5px}
+.method small{display:inline-block;font-size:10px;font-weight:800;color:#5877a9;background:#edf3fd;padding:6px 8px;border-radius:7px;white-space:nowrap}
+.method[data-method="manual"] small{color:#34816f;background:#eaf8f1}
+.method-detail{border-top:1px solid #e7edf5;background:#f9fbff;padding:20px 26px 25px}
+.method-detail h3{font-size:15px;color:#223952;margin:0 0 11px}
+.method-detail ol{padding-left:20px;margin:0 0 15px;color:#607187;font-size:12px;line-height:1.8}
+.method-detail li{margin:0 0 4px}
+.method-detail .info{border:1px solid #dce7fa;background:#eff5ff;color:#4b6694;padding:12px 13px;border-radius:9px;line-height:1.7;font-size:12px}
+.order-card{position:sticky;top:22px}
+.order-product{display:flex;gap:14px;padding:22px 22px 18px;align-items:start}
+.order-product img{width:113px;max-width:38%;aspect-ratio:1.45;object-fit:cover;background:#edf1f6;border:1px solid #e5eaf1;border-radius:9px;flex:none}
+.order-product-copy{min-width:0}
+.order-product-copy small{display:block;color:#7c8ba1;font-size:11px;font-weight:700;margin-bottom:7px}
+.order-product-copy h3{font-size:15px;line-height:1.35;letter-spacing:-.4px;color:#253a52;margin:0 0 6px}
+.order-product-copy p{font-size:11px;color:#7b8b9d;line-height:1.55;margin:0}
+.summary-lines{padding:0 22px 21px}
+.summary-line{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;font-size:12px;color:#6c7d91;padding:10px 0}
+.summary-line strong{color:#2e425a;font-weight:770;text-align:right}
+.summary-line.total{border-top:1px solid #e6ebf1;margin-top:10px;padding-top:17px;align-items:center}
+.summary-line.total strong{font-size:22px;letter-spacing:-.6px;color:#1e3349}
+.summary-unavailable{background:#fff8ed;border:1px solid #f1dcb9;color:#8d6d45;font-size:12px;line-height:1.7;padding:13px 14px;border-radius:9px;margin:0 22px 15px}
+.checkout-disabled{display:block;width:calc(100% - 44px);min-height:47px;margin:0 22px;padding:14px 15px;border-radius:10px;border:1px solid #dfe5ed;background:#e9edf2;color:#6e7e90;font-size:13px;font-weight:800;cursor:not-allowed}
+.checkout-footer-links{padding:17px 22px 23px;display:flex;align-items:center;justify-content:center;gap:13px;flex-wrap:wrap}
+.checkout-footer-links a{font-size:11px;color:#3568bb;font-weight:700}
+.checkout-footer-links a:hover{text-decoration:underline}
+.checkout-safe-note{font-size:12px;color:#738397;line-height:1.8;margin:19px 3px 0}
+.checkout-safe-note strong{color:#3b536c}
+.checkout-error{background:#fff;border:1px dashed #c9d5e3;border-radius:15px;text-align:center;padding:55px 20px}
+.checkout-error h2{font-size:25px;margin:0 0 10px}.checkout-error p{color:#77879a;font-size:13px;line-height:1.8;margin:0 auto 20px}
+@media(max-width:1020px){.checkout-columns{grid-template-columns:minmax(0,1fr) minmax(295px,.84fr);gap:17px}.method{gap:10px;padding:15px}.method small{font-size:9px}}
+@media(max-width:800px){.checkout-columns{grid-template-columns:1fr}.order-card{position:static}.checkout-heading p{font-size:13px}}
+@media(max-width:600px){.checkout-layout{padding-top:19px;padding-bottom:55px}.checkout-breadcrumb{margin-bottom:17px}.checkout-heading{margin-bottom:21px}.checkout-heading h1{font-size:30px}.checkout-heading p{font-size:12px}.checkout-preview-badge{font-size:10px}.checkout-columns{gap:15px}.checkout-card{border-radius:12px}.checkout-card-header{padding:20px 17px 14px}.checkout-card h2{font-size:18px}.methods{padding:12px;gap:9px}.method{padding:13px 12px;grid-template-columns:auto minmax(0,1fr);gap:10px}.method-main strong{font-size:13px}.method-main span{font-size:11px}.method small{grid-column:2;justify-self:start;margin-top:2px}.method-detail{padding:18px 17px 20px}.method-detail ol{font-size:11px}.order-product{padding:18px}.order-product img{width:107px}.summary-lines{padding:0 18px 17px}.summary-unavailable{margin:0 18px 13px}.checkout-disabled{margin:0 18px;width:calc(100% - 36px)}.checkout-footer-links{padding:14px 18px 20px}}
+@media(prefers-reduced-motion:reduce){.method{transition:none}}
+</style></head>
+<body>
+<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/">anshel<span>.</span>market</a><nav class="global-nav" aria-label="Navigasi utama"><a href="/">Katalog</a><a href="/tersimpan.html">Tersimpan</a><a href="/tentang.html">Tentang</a></nav><span class="nav-fill"></span><a class="nav-link" href="/">← Kembali ke katalog</a></div></header>
+<div class="status-line"><div class="wrap"><b>PRATINJAU CHECKOUT</b> Pembayaran belum diaktifkan. Tidak ada transaksi atau pesanan yang dibuat melalui halaman ini.</div></div>
+<main class="wrap checkout-layout">
+<nav class="checkout-breadcrumb" aria-label="Breadcrumb"><a href="/">Katalog</a><span>/</span><a id="detailBreadcrumb" href="/">Detail produk</a><span>/</span><span>Pratinjau pembayaran</span></nav>
+<div class="checkout-preview-badge">Belum menerima pembayaran</div>
+<div class="checkout-heading"><h1>Rancangan checkout</h1><p>Lihat metode pembayaran yang direncanakan untuk Anshel Market. Halaman ini hanya pratinjau antarmuka dan tidak meminta data pembeli, menerima transfer, atau membuat pesanan.</p></div>
+<div id="checkoutApp"></div>
+<p class="checkout-safe-note"><strong>Keamanan:</strong> nomor rekening, tautan pembayaran, dan unggahan bukti transfer belum diaktifkan. Nantinya, file source code hanya dapat diberikan setelah pembayaran diverifikasi dari sumber resmi dan produk beserta lisensinya benar-benar tersedia.</p>
+</main>
+<footer class="bottom-bar"><div class="wrap"><a href="/" class="brand">anshel<span>.</span>market</a><div class="footer-links"><a href="/kebijakan.html">Kebijakan & lisensi</a><a href="/tentang.html">Tentang</a><a href="/">Katalog</a></div><span>© <span id="year"></span> Anshel Market</span></div></footer>
+<script src="/catalog-data.js"></script><script>
+(function(){
+"use strict";
+const products=window.AnshelProducts||[];
+const escapeText=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n);
+const raw=new URLSearchParams(location.search).get("id");
+const id=raw&&/^\d{1,3}$/.test(raw)?Number(raw):null;
+const product=products.find(item=>item.id===id);
+const app=document.getElementById("checkoutApp");
+document.getElementById("year").textContent=new Date().getFullYear();
+if(!product){app.innerHTML='<div class="checkout-error"><h2>Pilih produk dari katalog.</h2><p>Produk yang diminta tidak ada atau belum tersedia untuk pratinjau checkout.</p><a class="btn btn-primary" href="/">Buka katalog</a></div>';return}
+document.title="Pratinjau Checkout — "+product.name+" | Anshel Market";
+document.getElementById("detailBreadcrumb").href="/produk.html?id="+product.id;
+const methods=[
+ {id:"manual",name:"Transfer rekening bank",desc:"Rancangan metode utama. Pembayaran akan diperiksa secara manual oleh pengelola setelah sistem pesanan aktif.",status:"Rencana awal",title:"Alur transfer rekening (rencana)",steps:["Pembeli memilih produk dan membuat pesanan melalui server.","Server menyimpan nomor pesanan, nominal, dan status menunggu pembayaran.","Pembeli mengirim pembayaran ke rekening bisnis yang telah diverifikasi.","Pengelola memeriksa dana masuk langsung melalui mutasi bank, bukan hanya dari screenshot.","File produk diberikan setelah pesanan disetujui dan hak akses diverifikasi."],info:"Belum ada nomor rekening yang ditampilkan atau instruksi untuk mengirim uang."},
+ {id:"gateway",name:"Virtual Account otomatis",desc:"Tahap lanjutan dengan penyedia payment gateway, misalnya Midtrans atau Xendit, setelah akun merchant siap.",status:"Integrasi nanti",title:"Alur Virtual Account (rencana)",steps:["Server membuat pesanan dengan nominal yang dihitung sendiri.","Server meminta instruksi pembayaran ke penyedia gateway resmi.","Pembeli membayar Virtual Account melalui bank yang didukung.","Server menerima notifikasi terverifikasi dan memeriksa status pembayaran.","Akses produk dibuat setelah status pembayaran sah dan file siap dikirim."],info:"Tidak ada koneksi Midtrans/Xendit, Virtual Account, atau verifikasi otomatis yang aktif saat ini."},
+ {id:"trakteer",name:"Trakteer Shop",desc:"Alternatif menjual produk digital melalui halaman pihak ketiga setelah produk asli dan akun kreator disetujui.",status:"Alternatif",title:"Alur Trakteer Shop (rencana)",steps:["Produk digital asli diajukan melalui Trakteer Shop untuk ditinjau.","Produk yang disetujui memiliki halaman pembelian resmi di Trakteer.","Pengunjung Anshel diarahkan ke halaman produk tersebut, bukan ke rekening pribadi.","Trakteer dan mitra pembayarannya menangani proses pembayaran berdasarkan ketentuan mereka.","Akses produk mengikuti mekanisme pengiriman yang didukung Trakteer."],info:"Belum ada tautan Trakteer yang dikonfigurasi. Anshel tidak dapat memeriksa transaksi Trakteer secara otomatis tanpa integrasi yang tersedia."}
+];
+app.innerHTML='<div class="checkout-columns"><section class="checkout-card" aria-labelledby="paymentHeading"><div class="checkout-card-header"><h2 id="paymentHeading">Metode pembayaran yang direncanakan</h2><p>Pilih salah satu untuk melihat gambaran alurnya. Tidak ada pembayaran yang bisa diproses.</p></div><div class="methods" id="methods"></div><div class="method-detail" id="methodDetail" aria-live="polite"></div></section><aside class="checkout-card order-card" aria-label="Ringkasan produk"><div class="checkout-card-header"><h2>Ringkasan produk</h2><p>Katalog pratinjau · bukan tagihan atau pesanan</p></div><div class="order-product"><img src="/previews/'+product.kind+'.svg" width="1200" height="780" alt="Ilustrasi '+escapeText(product.name)+'"><div class="order-product-copy"><small>'+escapeText(product.category)+'</small><h3>'+escapeText(product.name)+'</h3><p>'+escapeText(product.stack)+'</p></div></div><div class="summary-lines"><div class="summary-line"><span>Harga ilustratif</span><strong>'+money(product.price)+'</strong></div><div class="summary-line"><span>Biaya metode pembayaran</span><strong>Belum ditentukan</strong></div><div class="summary-line total"><span>Estimasi harga produk</span><strong>'+money(product.price)+'</strong></div></div><div class="summary-unavailable">Produk ini belum dijual. Harga belum final dan nominal di atas tidak boleh dijadikan dasar transfer.</div><button class="checkout-disabled" type="button" disabled aria-disabled="true">Pembayaran belum tersedia</button><div class="checkout-footer-links"><a href="/produk.html?id='+product.id+'">Kembali ke detail</a><a href="/kebijakan.html">Kebijakan & lisensi</a></div></aside></div>';
+const methodEl=document.getElementById("methods"),details=document.getElementById("methodDetail");
+methodEl.innerHTML=methods.map((m,i)=>'<label class="method" data-method="'+m.id+'"><input type="radio" name="paymentMethod" value="'+m.id+'" '+(i===0?"checked":"")+'><span class="method-main"><strong>'+m.name+'</strong><span>'+m.desc+'</span></span><small>'+m.status+'</small></label>').join("");
+function renderMethod(id){const m=methods.find(item=>item.id===id)||methods[0];details.innerHTML='<h3>'+m.title+'</h3><ol>'+m.steps.map(s=>'<li>'+s+'</li>').join("")+'</ol><div class="info">'+m.info+'</div>'}
+methodEl.addEventListener("change",e=>{if(e.target.name==="paymentMethod")renderMethod(e.target.value)});
+renderMethod("manual");
+})();
+</script>
+</body></html>
