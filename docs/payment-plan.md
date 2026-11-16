@@ -1,42 +1,46 @@
-# Rencana pembayaran Anshel Market
+# Pembayaran Anshel Market — Rencana rilis transfer Mandiri
 
-## Status saat ini
-- Frontend katalog menggunakan **enam produk konsep** dan harga **ilustratif**.
-- `checkout.html` hanyalah pratinjau pilihan pembayaran. Tidak membuat pesanan, mengumpulkan identitas pembeli, menerima uang, atau membuka unduhan.
-- **Dilarang** membuka nomor rekening, payment link aktif, atau tombol bayar pada produk konsep yang belum memiliki aset, dokumentasi, dan lisensi.
-- Pendaftaran merchant dan rekening harus dilakukan oleh pihak yang memenuhi persyaratan penyedia serta ketentuan usia/izin wali.
+## Keputusan (16 November 2026)
+- **Metode utama:** transfer rekening **Bank Mandiri langsung**. Proses pemesanan dan status tetap ada di website Anshel.
+- **SeaBank:** tidak ditampilkan sebagai pilihan checkout selama belum diperlukan dan belum dikonfigurasi.
+- **Trakteer, Midtrans, Xendit:** tidak digunakan dalam checkout awal. Bisa ditinjau kembali di masa depan jika ada kebutuhan bisnis.
+- **Status saat ini:** checkout adalah **pratinjau non-transaksional**. Semua listing masih konsep dan harga ilustratif. Tidak ada pesanan, rekening yang diumumkan, konfirmasi pembayaran atau unduhan aktif.
+- Pemilik akun/rekening dan izin penggunaan bisnis harus memenuhi syarat bank dan hukum yang berlaku; apabila memerlukan persetujuan orang tua/wali, pengaturan tersebut dilakukan melalui kanal resmi.
 
-## Keputusan awal (rencana, belum diaktifkan)
-1. **Transfer rekening manual** untuk percontohan awal setelah ada produk asli: pembeli mendapatkan nomor order dari server, rekening bisnis yang diverifikasi, nominal server, dan tenggat bayar. Admin memverifikasi dana masuk dari kanal bank resmi, kemudian memenuhi pesanan.
-2. **Midtrans Virtual Account** untuk checkout terintegrasi ketika akun merchant aktif dan backend siap. Penjual dapat mempertimbangkan Xendit sebagai alternatif. Biaya dan ketersediaan layanan harus diverifikasi sebelum rilis.
-3. **Trakteer Shop** sebagai opsi penjualan di luar checkout Anshel jika produk original mendapat persetujuan Trakteer. Jangan membuat tautan pembayaran palsu, dan jangan menganggap transaksi Trakteer sebagai pembayaran Anshel tanpa integrasi yang sah.
+## Yang sudah diimplementasikan
+- `checkout.html` adalah halaman Mandiri-only responsif. Untuk setiap produk konsep tersedia ringkasan, status belum aktif dan alur transfer.
+- `checkout.css` menyediakan layout desktop dua kolom dan mobile satu kolom.
+- Data rekening **tidak ditebak, di-hardcode, atau diminta melalui browser**. Kolom nomor rekening dan atas nama jelas berstatus belum dikonfigurasi.
+- Tombol `Pesanan belum tersedia` **disabled**; tidak ada API order, database, formulir pembeli, invoice, nomor pembayaran, atau file yang dapat diunduh.
+- Halaman detail produk terhubung ke `/checkout.html?id=N`.
 
-## Urutan sebelum produksi
-- [ ] Ganti konsep menjadi produk source code asli dengan pemeriksaan kepemilikan.
-- [ ] Buat arsip file ZIP aman, pemeriksaan malware, dokumentasi, versi, dependensi, dan demo.
-- [ ] Tulis lisensi yang jelas untuk tiap produk, kebijakan refund, informasi pajak/biaya, serta kontak dukungan yang sah.
-- [ ] Tentukan pemilik legal akun merchant dan rekening bisnis yang sudah diverifikasi.
-- [ ] Buat backend untuk stok/produk, pembeli, pesanan, pembayaran, dan pengiriman digital.
-- [ ] Buat role admin dengan autentikasi kuat dan audit trail.
-- [ ] Simpan harga, biaya, dan order ID di server, **bukan** mengandalkan URL atau angka dari frontend.
-- [ ] Buat order berstatus `pending` dengan ID unik, timestamp, total, metode, dan masa berlaku.
-- [ ] Untuk transfer manual, cocokkan transaksi di mutasi bank resmi dengan order; screenshot saja tidak cukup sebagai bukti.
-- [ ] Untuk gateway, verifikasi **signature notifikasi**, status pembayaran di provider, nominal, dan ID transaksi; proses notifikasi secara idempotent.
-- [ ] Jangan pernah memasukkan API key, server key, token, atau kredensial rekening ke frontend/repo publik.
-- [ ] Baru setelah status pesanan benar-benar `paid` dan hak unduh sah, buat signed URL berumur pendek ke file **private**.
-- [ ] Buat proses refund/sengketa dan re-delivery yang tercatat.
-- [ ] Uji pembayaran **sandbox**, penolakan pembayaran, pembayaran ganda, webhook palsu, timeout, refund, dan delivery sebelum mengaktifkan produksi.
+## Syarat membuka pembayaran
+1. Ganti listing konsep menjadi source code asli yang sah dijual; periksa kepemilikan, dokumentasi, dependensi, README, demo, dan isi ZIP.
+2. Tentukan lisensi, kebijakan refund, kebijakan data pribadi, kontak dukungan, harga final dan biaya transfer yang mungkin dikenakan bank pengirim.
+3. Verifikasi pemilik rekening Mandiri dan kepatuhan penggunaan bisnis melalui kanal bank yang resmi. Nama dan rekening penerima baru diumumkan **pada checkout order yang sah**, bukan di repository sebagai placeholder.
+4. Gunakan backend dengan autentikasi admin dan database permanen untuk produk, order, pembayaran, log audit, dan hak unduhan.
+5. Backend wajib menghitung nominal/produk dari data terpercaya; **abaikan harga, status, dan identitas yang dikirim frontend**.
+6. Buat order acak unik yang tahan pengulangan dan simpan `order_id`, `product_id`, `price_snapshot`, `pending_at`, `expires_at`, `payment_state`, `delivery_state`. Order baru tidak bisa dibayar jika produk tidak aktif.
+7. Setelah order dibuat, tampilkan nomor dan nama rekening penerima **yang sudah diverifikasi**, nominal server, nomor order, batas waktu, dan instruksi transfer.
+8. Konfirmasi awal pembeli (jika tersedia) hanya membuat tanda **menunggu verifikasi**, tidak boleh mengubah `payment_state` ke `paid`.
+9. Admin memeriksa **mutasi rekening bank resmi**, nilai, waktu, dan referensi sebelum mengonfirmasi pembayaran. Screenshot atau pesan chat bukan bukti lunas.
+10. Proses konfirmasi harus idempotent dan tercatat, memerlukan admin terautentikasi dan mencegah satu mutasi dipakai untuk melunasi beberapa order.
+11. Setelah status lunas benar, buat hak unduhan terikat identitas/order; file disimpan privat dan hanya diberikan melalui URL bertanda tangan berjangka waktu.
+12. Uji pesanan gagal, duplikat, kedaluwarsa, palsu, tanpa izin, dan refund sebelum mengaktifkan pembayaran produksi.
 
-## Status pesanan yang disarankan
-`pending` → `awaiting_payment` → `paid` → `delivered`
+## Status order yang diperbolehkan
+- `pending` → `awaiting_payment` → `payment_review` → `paid` → `delivered`.
+- Jalur alternatif `expired`, `cancelled`, `rejected`, `refunded`.
+- Tidak ada perubahan status `paid` / `delivered` dari input browser pembeli.
 
-Jalur alternatif: `expired`, `cancelled`, `payment_failed`, `refunded`. Status gagal atau kedaluwarsa **tidak pernah** boleh membuka file. Pembayaran tidak boleh mengubah status pesanan hanya dari permintaan browser pembeli.
+## Kesiapan sebelum rilis
+- [ ] Produk asli dan dokumen lisensi siap.
+- [ ] Rekening penerima Mandiri dan pemiliknya diverifikasi sesuai ketentuan.
+- [ ] Backend dan database dengan kontrol akses admin.
+- [ ] Admin bisa memeriksa mutasi dan audit pesanan.
+- [ ] Pembeli bisa melihat status pesanan dengan autentikasi yang aman.
+- [ ] File pribadi, signed URL, dan pengiriman digital tersedia.
+- [ ] Penanganan refund dan dukungan pelanggan tersedia.
+- [ ] Integrasi diuji lengkap dan ditinjau sebelum sakelar penerimaan order diaktifkan.
 
-## Sumber informasi resmi yang telah ditinjau
-- Midtrans pricing: https://midtrans.com/id/biaya
-- Midtrans bank transfer: https://docs.midtrans.com/reference/payment-bank-transfer
-- Xendit biaya: https://help.xendit.co/hc/id/articles/360039086452-Bagaimana-rincian-biaya-untuk-produk-Xendit
-- Trakteer Shop: https://help.trakteer.id/help-center/articles/1/2/76/apa-itu-trakteer-shop
-- Trakteer syarat: https://new.trakteer.id/terms
-
-Catatan: sumber adalah referensi eksternal dan biaya/ketentuan dapat berubah. Ini rencana teknis, **bukan integrasi pembayaran yang aktif**.
+**Penting:** GitHub dan HTML publik tidak digunakan untuk menyimpan kredensial bank, password perbankan, API key, atau detail pribadi penerima yang belum perlu diumumkan. Ini catatan implementasi, bukan sistem pembayaran aktif.
