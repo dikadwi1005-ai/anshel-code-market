@@ -10,6 +10,6 @@ export default function SiteHeader(){
       <Link href="/tersimpan" aria-current={path==="/tersimpan"?"page":undefined}>Tersimpan</Link>
       <Link href="/tentang" aria-current={path==="/tentang"?"page":undefined}>Tentang</Link>
     </nav>
-    <div className="headerEnd"><Link className="outlineLink" href="/admin">Dashboard Admin</Link></div>
+
   </div></header>;
 }
