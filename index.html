@@ -90,6 +90,155 @@ header{position:sticky;top:0;background:#fff;z-index:8;box-shadow:0 1px 0 #e9ecf
 .product .p-desc{font-size:10px}
 .product .card-actions button[data-id]{font-size:10px}
 }
+
+/* Visual refresh — distinct product artwork and legible storefront cards */
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#16202c;background:#f8f9fb}
+body{background:#f8f9fb}
+header{background:#fff}
+.shell{max-width:1420px}
+.bar{height:77px}
+.brand{letter-spacing:-1.35px;font-weight:850}
+.brand span{color:#3268f0}
+.searchbar{background:#f6f7f9;border-color:#e8ebef;border-radius:11px;max-width:560px}
+.searchbar:focus-within{background:white}
+.nav{gap:28px}
+.nav a{font-size:13px;color:#424d5b}
+.subnav{background:#fff}
+.subnav .shell{gap:34px}
+.subnav button[aria-pressed=true]{color:#2c5fca;border-color:#336be0}
+.main{padding-top:36px}
+.breadcrumb{color:#94a0ad}
+.catalog-notice{display:flex;align-items:center;gap:8px;margin-top:20px;padding:11px 15px;background:#eff4fd;border:1px solid #dce7fb;color:#586d8f;border-radius:10px}
+.catalog-notice strong{color:#2c57a6}
+.heading{margin:28px 0 28px}
+.heading h1{font-size:37px;letter-spacing:-1.7px;font-weight:800;color:#172332}
+.heading p{color:#677688}
+.layout{grid-template-columns:210px minmax(0,1fr);gap:32px}
+.sidebar{padding-right:19px;border-color:#e5e9ee}
+.sidebar h2{font-size:12px;font-weight:800;letter-spacing:.03em}
+.sidebar button.active{background:#e8efff;color:#245ac8}
+.sidebar button{border-radius:9px}
+.side-note{background:#fff;color:#708090;border-color:#e5e9ef}
+.results-top{gap:11px;margin-bottom:18px}
+.results-top strong{font-size:13px;color:#556374}
+.results-top button,.results-top select{border-radius:8px;min-height:40px}
+.results-top #sort{padding:11px}
+.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.product{display:flex;flex-direction:column;min-width:0;min-height:0;background:#fff;border:1px solid #e5e9ef;border-radius:15px;overflow:hidden;box-shadow:0 3px 14px rgba(18,38,70,.025);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.product:hover{transform:translateY(-3px);box-shadow:0 13px 35px rgba(19,39,71,.09);border-color:#d5dce6}
+.product .art{width:100%;aspect-ratio:1.54;border:0;border-radius:0;background:#e7eaf0;min-height:0;display:block;overflow:hidden}
+.product .art .preview-image,.art .preview-image{display:block;width:100%;height:100%;object-fit:cover}
+.product .art .flag{top:12px;left:12px;background:#fffffff2;color:#4d5c70;font-size:10px;font-weight:750;border:1px solid #e4e8ee;border-radius:7px;padding:7px 9px;box-shadow:0 2px 8px #101b2610}
+.p-meta{margin:18px 18px 7px;color:#62728a;font-size:11px;line-height:1.5;font-weight:550}
+.p-title{margin:0 18px 7px;font-size:18px;letter-spacing:-.55px;line-height:1.3;color:#1c2a3a;font-weight:780}
+.p-desc{margin:0 18px 16px;min-height:42px;line-height:1.65;color:#768394;font-size:12px}
+.p-foot{padding:15px 18px 17px;margin-top:auto;border-top:1px solid #edf0f4;display:flex;flex-direction:column;align-items:stretch;gap:12px}
+.p-foot strong{font-size:19px;color:#1f2e42;font-weight:800;letter-spacing:-.35px}
+.card-actions{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;justify-content:stretch}
+.compare-control{grid-column:1/-1;display:flex;align-items:center;gap:7px;width:100%;font-size:11px;color:#697789;min-height:22px}
+.compare-control input{width:15px;height:15px}
+.p-foot button{height:42px;border-radius:9px}
+.p-foot .save{grid-column:1;grid-row:2;width:44px;height:42px;font-size:21px;padding:0;background:#fff}
+.p-foot button[data-id]{grid-column:2;grid-row:2;width:100%;border-color:#273b59;background:#233a58;color:#fff;font-weight:750;font-size:12px}
+.p-foot button[data-id]:hover{background:#142842;color:#fff}
+.p-foot .save:hover{background:#f7faff}
+.product:hover .art{border-color:transparent}
+.catalog-end{color:#9ba6b3;padding:35px 0 10px}
+.faq{margin-top:67px}
+.faq h2,.bottom-info h2{color:#1d2a39}
+.faq details{border-bottom-color:#e0e6ed}
+.faq summary{color:#26364b}
+.bottom-info{border-color:#e2e7ed}
+.footer{background:#fff;border-top-color:#e3e8ee}
+dialog{border:1px solid #e1e6ef;border-radius:19px;width:min(1000px,calc(100% - 32px));box-shadow:0 28px 85px #111d3547}
+.detail-layout{grid-template-columns:1fr 1fr}
+.detail-art{display:flex;align-items:center;justify-content:center;padding:27px;background:#eef1f5}
+.detail-art .art{width:100%;aspect-ratio:1.48;border:1px solid #e1e6ee;border-radius:11px;overflow:hidden;box-shadow:0 12px 35px #1d31421b}
+.detail-copy{padding:34px}
+.detail-copy h2{color:#1e2c3f;font-weight:800}
+.detail-copy .price{color:#1f2e43}
+.detail-copy button{border-radius:9px}
+.compare-grid .art{border-radius:10px;overflow:hidden}
+@media(max-width:1240px) and (min-width:721px){
+.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+:root{background:#f7f8fa}
+body{background:#f7f8fa}
+.shell{padding-left:16px;padding-right:16px}
+header{position:sticky;top:0;z-index:8;box-shadow:0 1px 0 rgba(28,43,67,.06)}
+.bar{height:auto;display:grid;grid-template-columns:1fr auto;align-items:center;gap:13px 8px;padding-top:13px;padding-bottom:14px;min-height:0}
+.brand{font-size:22px;letter-spacing:-1.5px}
+.header-action{display:inline-flex;font-size:11px;min-height:36px;align-items:center;border-radius:9px;padding:8px 12px}
+.searchbar{grid-column:1/-1;order:unset;min-width:0;margin:0;width:100%;max-width:none;background:#f5f7fa;border:1px solid #e9edf1;border-radius:10px}
+.searchbar input{font-size:16px;padding:13px 10px}
+.subnav{border-bottom:1px solid #e8ecf1;scrollbar-width:none}
+.subnav::-webkit-scrollbar{display:none}
+.subnav .shell{display:flex;gap:8px;width:max-content;min-width:100%;align-items:center;min-height:55px;padding-right:20px}
+.subnav button{padding:10px 14px;border:1px solid #e4e8ef;border-radius:999px;line-height:1.25;white-space:nowrap;color:#657285;font-weight:650;font-size:12px}
+.subnav button[aria-pressed=true]{border:1px solid #2961d4;background:#eaf1ff;color:#245cc6;font-weight:800}
+.main{padding-top:15px}
+.breadcrumb{display:none}
+.catalog-notice{margin:0;padding:10px 12px;line-height:1.5;font-size:11px;align-items:center;gap:4px;border-radius:8px;display:block}
+.catalog-notice strong{display:inline;margin-right:5px}
+.heading{margin:22px 0 18px;display:block}
+.heading h1{font-size:28px;line-height:1.12;letter-spacing:-1.2px;margin:0 0 8px}
+.heading p{font-size:13px;line-height:1.55;color:#718093}
+.heading .count{display:none}
+.layout{display:block}
+.sidebar,.mobile-filter{display:none!important}
+.results-top{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 17px;align-items:center}
+.results-top strong{display:none}
+.results-top #favoritesOnly{grid-column:1;grid-row:1;justify-self:stretch}
+.results-top #compareToggle{grid-column:2;grid-row:1;justify-self:stretch}
+.results-top #sort{grid-column:1;grid-row:2;width:100%;max-width:none;min-width:0;font-size:12px;padding:10px 9px;border-radius:9px}
+.results-top #resetFilters{grid-column:2;grid-row:2;justify-self:stretch;margin:0}
+.results-top button,.results-top select{min-height:41px;border-radius:9px;background:#fff;font-size:12px}
+.grid{display:flex;flex-direction:column;gap:16px}
+.product{display:flex;flex-direction:column;width:100%;padding:0;gap:0;border-radius:15px;border:1px solid #e2e7ef;background:#fff;box-shadow:0 3px 14px #1e2c3b0a}
+.product:first-child{padding-top:0}
+.product .art{display:block;width:100%;aspect-ratio:1.58;min-height:0;grid-column:unset;grid-row:unset;border-radius:0;border:0;overflow:hidden}
+.product .art .preview-image{display:block;width:100%;height:100%;object-fit:cover}
+.product .art .flag{font-size:10px;top:11px;left:11px;padding:6px 9px;max-width:none;border-radius:7px}
+.product .p-meta{grid-column:unset;grid-row:unset;margin:16px 17px 6px;font-size:11px;line-height:1.4;color:#667992;font-weight:600}
+.product .p-title{grid-column:unset;grid-row:unset;margin:0 17px 7px;font-size:19px;line-height:1.25;letter-spacing:-.6px;color:#1b2b3d}
+.product .p-desc{grid-column:unset;grid-row:unset;margin:0 17px 14px;font-size:12px;min-height:0;line-height:1.65;color:#738091;display:block;overflow:visible}
+.product .p-foot{grid-column:unset;grid-row:unset;margin:0;display:flex;flex-direction:column;align-items:stretch;gap:12px;border-top:1px solid #edf0f4;padding:13px 17px 17px}
+.product .p-foot strong{font-size:19px;letter-spacing:-.4px}
+.product .card-actions{display:grid;grid-template-columns:44px 1fr;gap:8px;width:100%;align-items:center}
+.product .compare-control{grid-column:1/-1;grid-row:1;width:auto;font-size:11px;min-height:22px;white-space:normal}
+.product .card-actions .save{grid-column:1;grid-row:2;width:44px;height:43px;padding:0;font-size:21px}
+.product .card-actions button[data-id]{grid-column:2;grid-row:2;min-height:43px;width:100%;font-size:12px;font-weight:780;padding:10px 12px}
+.product .mini-top,.product .mini-body,.product .mini-chat,.product .mini-rows{display:none}
+.catalog-end{padding:24px 0 6px}
+.faq{margin-top:31px;padding-top:29px}
+.faq h2{font-size:20px}
+.faq details{padding:17px 0}
+.faq summary{font-size:13px;line-height:1.6}
+.bottom-info{margin-top:39px;padding:29px 0;gap:26px}
+.bottom-info h2{font-size:17px}
+.footer .shell{flex-direction:column;gap:13px}
+dialog{width:calc(100% - 16px);max-height:calc(100dvh - 28px);border-radius:15px}
+.detail-layout{display:block}
+.detail-art{padding:13px}
+.detail-art .art{aspect-ratio:1.65;border-radius:9px}
+.detail-copy{padding:20px}
+.detail-copy h2{font-size:23px}
+.detail-copy .price{font-size:22px}
+.detail-copy button{margin-top:11px}
+.compare-grid{grid-template-columns:1fr}
+.compare-grid .art{aspect-ratio:1.85}
+}
+@media(max-width:390px){
+.shell{padding-left:13px;padding-right:13px}
+.product{display:flex;grid-template-columns:none;gap:0}
+.product .art{aspect-ratio:1.56;min-height:0}
+.product .p-title{font-size:18px}
+.product .p-desc{font-size:12px}
+.product .p-meta{font-size:11px}
+.product .card-actions button[data-id]{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.product{transition:none}.product:hover{transform:none}}
 </style></head><body>
 <header><div class="shell bar"><a href="#" class="brand" aria-label="Anshel Market beranda">anshel<span>.</span>market</a><nav class="nav"><a href="#catalog">Katalog</a><a href="#about">Tentang</a><a href="#help">Panduan</a></nav><label class="searchbar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input type="search" id="search" placeholder="Cari source code, template, atau teknologi..." aria-label="Cari source code"></label><a class="header-action" href="#faq">FAQ</a></div></header>
 <nav class="subnav" aria-label="Kategori utama"><div class="shell"><button data-category="" aria-pressed="true">Semua produk</button><button data-category="Website" aria-pressed="false">Website & landing page</button><button data-category="Dashboard" aria-pressed="false">Dashboard & admin</button><button data-category="AI Tools" aria-pressed="false">AI & automation</button></div></nav>
@@ -109,10 +258,11 @@ const products=[
 {id:6,name:"Creative Portfolio",category:"Website",kind:"portfolio",price:299000,stack:"HTML, CSS",desc:"Konsep portofolio untuk freelancer dan studio kreatif.",features:["Galeri karya","Profil singkat","Halaman kontak"]}
 ];
 const rupiah=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n);
-function art(kind){const top=t=>'<div class="mini-top"><span>'+t+'</span><span>•••</span></div>';if(kind==="dashboard")return '<div class="app">'+top("COMMAND / Overview")+'<div class="mini-body"><h4>Analytics</h4><div class="mini-stat"><span>Revenue<b>24.8k</b></span><span>Growth<b>+18%</b></span></div><div class="mini-bars"><i style="height:40%"></i><i style="height:60%"></i><i style="height:35%"></i><i style="height:80%"></i><i style="height:58%"></i><i style="height:93%"></i></div></div></div>';if(kind==="assistant")return '<div class="app">'+top("Workspace AI")+'<div class="mini-chat"><span>How can I organize my tasks?</span><span>Make a plan for this week.</span><span>Start with priorities, then assign deadlines.</span></div></div>';if(kind==="operations")return '<div class="app">'+top("TEAM / Tasks")+'<div class="mini-rows"><div><span>Website launch</span><b>In progress</b></div><div><span>Client review</span><b>Done</b></div><div><span>Design QA</span><b>In progress</b></div><div><span>Documentation</span><b>Done</b></div></div></div>';if(kind==="booking")return '<div class="app">'+top("BOOKING / November")+'<div class="mini-calendar">'+Array.from({length:28},(_,i)=>'<span>'+String(i+1)+'</span>').join("")+'</div></div>';if(kind==="portfolio")return '<div class="app">'+top("STUDIO / Portfolio")+'<div class="mini-portrait">A.</div></div>';return '<div class="app">'+top("NORTH / Studio")+'<div class="mini-body"><p>CREATIVE SERVICES</p><h4>We make<br>things work.</h4><p>Strategy, design and development.</p><div class="mini-cards"><i></i><i></i></div></div></div>'}
+function art(kind){const allowed=["website","dashboard","assistant","operations","booking","portfolio"];const safe=allowed.includes(kind)?kind:"website";return '<img class="preview-image" src="/previews/'+safe+'.svg" alt="" loading="lazy" decoding="async" width="1200" height="780">'}
+
 let active="";let onlyFavorites=false;const compared=new Set();let favorites=new Set();try{favorites=new Set(JSON.parse(localStorage.getItem("anshel-favorites")||"[]").filter(Number.isInteger))}catch{}
 function selectCategory(cat){active=cat;document.querySelectorAll("[data-category]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.category===cat)));document.querySelectorAll("[data-side]").forEach(b=>{const yes=b.dataset.side===cat;b.classList.toggle("active",yes);b.setAttribute("aria-pressed",String(yes))});document.getElementById("mobileCategory").value=cat;render()}
-function render(){const q=document.getElementById("search").value.toLocaleLowerCase("id").trim(),sort=document.getElementById("sort").value;let list=products.filter(p=>(!onlyFavorites||favorites.has(p.id))&&(!active||p.category===active)&&(p.name+" "+p.desc+" "+p.stack+" "+p.category).toLocaleLowerCase("id").includes(q));if(sort==="low")list.sort((a,b)=>a.price-b.price);if(sort==="high")list.sort((a,b)=>b.price-a.price);if(sort==="az")list.sort((a,b)=>a.name.localeCompare(b.name));document.getElementById("count").textContent=list.length+" konsep produk";document.getElementById("favoriteCount").textContent=favorites.size;document.getElementById("compareCount").textContent=compared.size;document.getElementById("compareToggle").setAttribute("aria-label","Bandingkan "+compared.size+" produk terpilih");document.getElementById("favoritesOnly").setAttribute("aria-pressed",String(onlyFavorites));document.getElementById("products").innerHTML=list.length?list.map(p=>'<article class="product"><div class="art '+p.kind+'"><span class="flag">Konsep / belum dijual</span>'+art(p.kind)+'</div><div class="p-meta">'+p.category+' · '+p.stack+'</div><h2 class="p-title">'+p.name+'</h2><p class="p-desc">'+p.desc+'</p><div class="p-foot"><strong>'+rupiah(p.price)+'</strong><div class="card-actions"><label class="compare-control"><input type="checkbox" data-compare="'+p.id+'" '+(compared.has(p.id)?"checked":"")+' aria-label="Bandingkan '+p.name+'"> Bandingkan</label><button class="save" data-save="'+p.id+'" aria-pressed="'+favorites.has(p.id)+'" aria-label="'+(favorites.has(p.id)?'Hapus dari tersimpan: ':'Simpan produk: ')+p.name+'">'+(favorites.has(p.id)?'♥':'♡')+'</button><button data-id="'+p.id+'">Lihat detail</button></div></div></article>').join(""):'<div class="empty">Tidak ada produk yang cocok. Ubah pencarian atau kategori.</div>'}
+function render(){const q=document.getElementById("search").value.toLocaleLowerCase("id").trim(),sort=document.getElementById("sort").value;let list=products.filter(p=>(!onlyFavorites||favorites.has(p.id))&&(!active||p.category===active)&&(p.name+" "+p.desc+" "+p.stack+" "+p.category).toLocaleLowerCase("id").includes(q));if(sort==="low")list.sort((a,b)=>a.price-b.price);if(sort==="high")list.sort((a,b)=>b.price-a.price);if(sort==="az")list.sort((a,b)=>a.name.localeCompare(b.name));document.getElementById("count").textContent=list.length+" konsep produk";document.getElementById("favoriteCount").textContent=favorites.size;document.getElementById("compareCount").textContent=compared.size;document.getElementById("compareToggle").setAttribute("aria-label","Bandingkan "+compared.size+" produk terpilih");document.getElementById("favoritesOnly").setAttribute("aria-pressed",String(onlyFavorites));document.getElementById("products").innerHTML=list.length?list.map(p=>'<article class="product"><div class="art '+p.kind+'"><span class="flag">Preview konsep</span>'+art(p.kind)+'</div><div class="p-meta">'+p.category+' · '+p.stack+'</div><h2 class="p-title">'+p.name+'</h2><p class="p-desc">'+p.desc+'</p><div class="p-foot"><strong>'+rupiah(p.price)+'</strong><div class="card-actions"><label class="compare-control"><input type="checkbox" data-compare="'+p.id+'" '+(compared.has(p.id)?"checked":"")+' aria-label="Bandingkan '+p.name+'"> Bandingkan</label><button class="save" data-save="'+p.id+'" aria-pressed="'+favorites.has(p.id)+'" aria-label="'+(favorites.has(p.id)?'Hapus dari tersimpan: ':'Simpan produk: ')+p.name+'">'+(favorites.has(p.id)?'♥':'♡')+'</button><button data-id="'+p.id+'">Lihat detail</button></div></div></article>').join(""):'<div class="empty">Tidak ada produk yang cocok. Ubah pencarian atau kategori.</div>'}
 document.querySelectorAll("[data-category]").forEach(b=>b.addEventListener("click",()=>selectCategory(b.dataset.category)));document.querySelectorAll("[data-side]").forEach(b=>b.addEventListener("click",()=>selectCategory(b.dataset.side)));document.getElementById("mobileCategory").addEventListener("change",e=>selectCategory(e.target.value));document.getElementById("search").addEventListener("input",render);document.getElementById("sort").addEventListener("change",render);
 document.getElementById("products").addEventListener("click",e=>{const check=e.target.closest("[data-compare]");if(check){const id=Number(check.dataset.compare);if(check.checked&&compared.size>=3){check.checked=false;toast("Maksimal tiga produk untuk dibandingkan.");return}if(check.checked)compared.add(id);else compared.delete(id);render();toast(compared.size+" produk dipilih untuk perbandingan.");return}const save=e.target.closest("[data-save]");if(save){const id=Number(save.dataset.save);if(favorites.has(id))favorites.delete(id);else favorites.add(id);try{localStorage.setItem("anshel-favorites",JSON.stringify([...favorites]))}catch{}render();return}const btn=e.target.closest("[data-id]");if(!btn)return;const p=products.find(x=>x.id===Number(btn.dataset.id));const box=document.getElementById("dialogContents");box.replaceChildren();const layout=document.createElement("div");layout.className="detail-layout";const visual=document.createElement("div");visual.className="detail-art";visual.innerHTML='<div class="art '+p.kind+'">'+art(p.kind)+'</div>';const copy=document.createElement("div");copy.className="detail-copy";const meta=document.createElement("div");meta.className="p-meta";meta.textContent=p.category+" / Konsep produk";const title=document.createElement("h2");title.textContent=p.name;const desc=document.createElement("p");desc.textContent=p.desc;const tech=document.createElement("p");tech.textContent="Teknologi: "+p.stack;const heading=document.createElement("h3");heading.textContent="Rencana cakupan produk";const ul=document.createElement("ul");p.features.forEach(f=>{const li=document.createElement("li");li.textContent=f;ul.append(li)});const price=document.createElement("div");price.className="price";price.textContent=rupiah(p.price);const status=document.createElement("div");status.className="status";status.textContent="Harga ilustratif. File source code, demo, lisensi, dan checkout belum tersedia. Produk ini belum dapat dibeli.";const share=document.createElement("button");share.textContent="Salin tautan produk";share.className="secondary-button";share.addEventListener("click",async()=>{const url=location.origin+location.pathname+"#produk-"+p.id;try{await navigator.clipboard.writeText(url);toast("Tautan produk disalin.")}catch{toast(url)}});const close=document.createElement("button");close.textContent="Tutup detail";close.addEventListener("click",()=>document.getElementById("productDialog").close());copy.append(meta,title,desc,tech,heading,ul,price,status,share,close);layout.append(visual,copy);box.append(layout);document.getElementById("productDialog").showModal();history.replaceState(null,"","#produk-"+p.id)});document.getElementById("productDialog").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close()});document.getElementById("resetFilters").addEventListener("click",()=>{document.getElementById("search").value="";document.getElementById("sort").value="default";onlyFavorites=false;selectCategory("")});document.getElementById("favoritesOnly").addEventListener("click",()=>{onlyFavorites=!onlyFavorites;render()});document.getElementById("compareToggle").addEventListener("click",()=>{if(!compared.size){toast("Pilih produk yang ingin dibandingkan.");return}const list=products.filter(p=>compared.has(p.id));document.getElementById("compareContents").innerHTML="<div class=\"compare-grid\">"+list.map(p=>"<div><div class=\"art "+p.kind+"\">"+art(p.kind)+"</div><h3>"+p.name+"</h3><p>"+p.category+" · "+p.stack+"</p><strong>"+rupiah(p.price)+"</strong><p>"+p.desc+"</p></div>").join("")+"</div><p>Semua produk masih konsep dan harga ilustratif.</p>";document.getElementById("compareDialog").showModal()});document.getElementById("closeCompare").addEventListener("click",()=>document.getElementById("compareDialog").close());document.getElementById("productDialog").addEventListener("close",()=>{if(location.hash.startsWith("#produk-"))history.replaceState(null,"",location.pathname+location.search)});function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove("show"),3000)}document.getElementById("year").textContent=new Date().getFullYear();render();function openFromHash(){const id=Number(location.hash.replace("#produk-",""));if(!location.hash.startsWith("#produk-")||!Number.isInteger(id))return;const p=products.find(x=>x.id===id);if(!p)return;const dialog=document.getElementById("productDialog");if(dialog.open)return;const button=document.querySelector("[data-id=\""+id+"\"]");if(button)button.click();else{document.getElementById("resetFilters").click();const found=document.querySelector("[data-id=\""+id+"\"]");if(found)found.click()}}window.addEventListener("hashchange",openFromHash);openFromHash();
 </script></body></html>
