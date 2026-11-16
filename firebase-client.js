@@ -45,10 +45,17 @@ export async function openFirebase(config, { administrator = false } = {}) {
         return (await dbSdk.getDocs(query)).docs.map(mapDocument);
       }));
       const [previews, published] = outcomes;
-      // During rules rollout, retain backward-compatible reads of any
-      // already-visible published records. Never allow drafts as a fallback.
-      if (previews.status === "rejected" && published.status === "rejected")
-        throw previews.reason;
+      // Do not silently interpret a permissions failure as an empty catalog.
+      // "preview" must be explicitly readable in the deployed Firestore Rules.
+      if (previews.status === "rejected") {
+        const error = previews.reason;
+        if (error?.code === "permission-denied")
+          throw new Error("Firestore Security Rules belum mengizinkan kueri pratinjau publik.");
+        throw error;
+      }
+      if (published.status === "rejected" &&
+          published.reason?.code !== "permission-denied")
+        throw published.reason;
       const rows = outcomes.flatMap(result =>
         result.status === "fulfilled" ? result.value : []);
       return [...new Map(rows.map(item => [item.id, item])).values()]
