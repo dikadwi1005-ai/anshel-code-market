@@ -10,7 +10,7 @@
 | Draft, harga, kategori, lisensi | Cloud Firestore | Kode siap, menunggu rules dan proyek |
 | Admin role | Dokumen Firestore `market_admins/{uid}` | Harus dibuat manual oleh pemilik dari Firebase Console |
 | Enam konsep produk | Dapat diimpor dari dashboard sebagai **draft** | Tidak ditampilkan sebagai produk terbit |
-| Produk publik terbit | Query Firestore status = published | Kode pembaca siap, **publikasi dikunci** |
+| Pratinjau produk publik | Query Firestore status = preview (atau published lama) | Bisa ditampilkan admin, **bukan untuk dijual** |
 | Arsip ZIP privat | Firebase Storage | **Tidak aktif**: memerlukan paket Blaze/penagihan |
 | Pesanan, transfer Mandiri, download | Backend transaksi terverifikasi | **Belum aktif** |
 
@@ -28,8 +28,8 @@
 Buka **Firestore Database → Rules**, salin isi `firebase/firestore.rules`, tinjau, kemudian **Publish**.
 
 Fungsi aturan keamanan:
-- Pembaca umum hanya boleh membaca produk dengan `status == "published"` dan kueri terbatas. Namun **tidak ada pengguna browser yang dapat menerbitkan produk** sebelum ZIP privat siap.
-- Akun admin boleh membuat dan memperbarui draft/arsip, tidak boleh menghapus produk atau membuat pesanan.
+- Pembaca umum hanya dapat membaca informasi produk berstatus `preview` atau `published` lama, dengan kueri terbatas maksimal 24 produk. **Preview tidak berarti siap dibeli**, dan pembelian serta akses ZIP tetap terkunci.
+- Akun admin boleh membuat dan mengubah **draft**, **preview** (pratinjau publik), dan **arsip**, tetapi tidak boleh menghapus produk atau membuat pesanan.
 - `market_admins` hanya dapat dibaca oleh pengguna yang sama dengan UID-nya; **tidak ada klien web yang boleh membuat atau mengubah anggota admin**.
 - `market_orders`, `market_assets`, dan `market_order_events` hanya terbaca oleh admin dan semua operasi tulis dari browser ditolak.
 - Semua koleksi yang tidak terdaftar ditolak secara default.
@@ -65,7 +65,8 @@ Lalu deploy ulang. Endpoint `/api/market-config` hanya mengembalikan konfigurasi
 - Buka [Dashboard Admin](https://anshel-code-market.vercel.app/admin.html).
 - Masuk dengan akun Email/Password yang UID-nya sudah dicatat di koleksi `market_admins`.
 - Klik **Impor 6 draft konsep** jika ingin menyalin keenam contoh katalog sebagai draft ke Firestore. Ini **tidak menjadikannya produk terbit**.
-- Edit nama, slug, kategori, teknologi, deskripsi, fitur, harga, path preview internal, lisensi dan status draft/arsip.
+- Edit nama, slug, kategori, teknologi, deskripsi, fitur, harga ilustratif, path preview internal, lisensi serta status **Draft / Pratinjau publik / Arsip**. Pada baris produk draft, klik **Tampilkan di website** agar frontend langsung membacanya. Klik **Sembunyikan** untuk mengembalikan ke draft.
+- Saat Firestore terhubung, halaman depan memakai daftar pratinjau publik sebagai **katalog utama**. Enam contoh hardcoded lama disembunyikan di balik tombol **Lihat 6 konsep katalog lama** agar perubahan admin tidak tertutup contoh statis. Jika belum ada pratinjau publik, frontend menampilkan pesan kosong yang jelas.
 - Gunakan **Produk** untuk pengelolaan; **Pesanan** hanya-baca dan akan kosong sampai backend transaksi dibangun.
 
 Login tidak disimpan permanen di browser, jadi setelah refresh perlu masuk kembali. Ini desain awal dashboard privat, bukan aplikasi akun pembeli.
@@ -75,7 +76,7 @@ Login tidak disimpan permanen di browser, jadi setelah refresh perlu masuk kemba
 Firebase Auth dan Firestore dapat dimulai pada paket **Spark**, sesuai kuota gratis yang berlaku. Namun **Cloud Storage for Firebase memerlukan paket Blaze** untuk mengakses bucket bahkan jika pemakaian dapat berada dalam kuota gratis.
 
 Untuk menghindari penagihan tak disengaja:
-- Tombol unggah ZIP, publikasi, checkout Mandiri dan download pembeli **sengaja tidak aktif**.
+- Tombol unggah ZIP, status penjualan final, checkout Mandiri dan download pembeli **sengaja tidak aktif**. **Pratinjau publik** hanya membuka deskripsi dan harga ilustratif, tanpa transaksi.
 - Jangan mengunggah source code komersial ke direktori publik website atau dokumen Firestore.
 - `firebase/storage.rules` berisi **deny-all**.
 - Jika nantinya mengaktifkan Blaze, perlu persetujuan pemilik/penanggung jawab pembayaran, peninjauan batas biaya dan aturan bucket privat yang terpisah.
