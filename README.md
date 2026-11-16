@@ -4,7 +4,7 @@ Anshel Code Market adalah katalog pratinjau source code yang dibangun dengan **N
 
 ## Menjalankan secara lokal
 
-Gunakan Node.js 22 atau versi yang kompatibel dengan Next.js 16.
+Gunakan **Node.js 24.12 atau lebih baru** (dibutuhkan oleh Firebase JS SDK 13 dan Next.js 16).
 
 ```bash
 npm install
