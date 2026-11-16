@@ -27,10 +27,10 @@ export async function openFirebase(config,{administrator=false}={}) {
   const assets=[],orders=[];
   let loggedIn=null;
   const client={
-    listPublished:async()=>[{
+    listPublicCatalog:async()=>[{
       id:"published-1",slug:"example-release",name:"Example Release",
       category:"Website",stack:"HTML",description:"Produk terbit simulasi",
-      price_idr:250000,status:"published",features:["Fitur A"],
+      price_idr:250000,status:"preview",features:["Fitur A"],
       preview_path:"/previews/website.svg",license_summary:"Lisensi contoh",
       created_at:now
     }]
@@ -54,6 +54,10 @@ export async function openFirebase(config,{administrator=false}={}) {
       const newId="p"+(products.length+1);
       products.unshift({...product,id:newId,created_at:new Date().toISOString()});
       return newId;
+    },
+    setCatalogVisibility:async(id,visible)=>{
+      const p=products.find(p=>p.id===id);
+      if(p)p.status=visible?"preview":"draft";
     },
     archiveProduct:async(id)=>{
       const p=products.find(p=>p.id===id);if(p)p.status="archived";
@@ -105,6 +109,7 @@ async function installMocks(page) {
     await page.locator("#newProduct").click();
     await page.locator("#productDialog").waitFor({state:"visible"});
     assert.equal(await page.locator('[name="status"] option[value="published"]').isDisabled(),true);
+    assert.equal(await page.locator('[name="status"] option[value="preview"]').isDisabled(),false);
     await page.locator('[name="name"]').fill("Market Demo Product");
     await page.locator('[name="slug"]').fill("market-demo-product");
     await page.locator('[name="price_idr"]').fill("250000");
@@ -112,6 +117,11 @@ async function installMocks(page) {
     await page.locator("#productDialog").waitFor({state:"hidden"});
     await page.waitForFunction(()=>document.querySelector("#totalProducts").textContent==="7");
     const row=page.locator("#productRows tr").filter({hasText:"Market Demo Product"});
+    await row.locator("[data-visibility]").click();
+    await page.waitForFunction(()=>document.querySelector("#publishedProducts").textContent==="1");
+    assert.ok((await row.innerText()).includes("Pratinjau publik"));
+    await row.locator("[data-visibility]").click();
+    await page.waitForFunction(()=>document.querySelector("#publishedProducts").textContent==="0");
     await row.locator("[data-edit]").click();
     await page.locator("#productDialog").waitFor({state:"visible"});
     assert.equal(await page.locator("#zipUploader input[type=file]").count(),0);
@@ -148,6 +158,16 @@ async function installMocks(page) {
   await page.goto(base+"/",{waitUntil:"domcontentloaded"});
   await page.locator("#marketLive").waitFor({state:"visible",timeout:15000});
   assert.equal(await page.locator(".live-card").count(),1);
+  assert.equal(await page.locator("#conceptLayout").evaluate(el=>el.hidden),true);
+  assert.ok((await page.locator("#count").innerText()).includes("1 dari 1 pratinjau"));
+  await page.locator("#search").fill("does-not-match");
+  assert.equal(await page.locator(".live-card").count(),0);
+  await page.locator("#search").fill("");
+  assert.equal(await page.locator(".live-card").count(),1);
+  await page.locator("#showDemoCatalog").click();
+  assert.equal(await page.locator("#conceptLayout").evaluate(el=>el.hidden),false);
+  await page.locator("#showDemoCatalog").click();
+  assert.equal(await page.locator("#conceptLayout").evaluate(el=>el.hidden),true);
   await page.locator(".live-card").click();
   await page.waitForURL("**/rilis.html?slug=example-release");
   await page.locator("#releaseApp h1").waitFor({state:"visible"});
@@ -156,6 +176,6 @@ async function installMocks(page) {
   await page.close();
 
   await browser.close();
-  console.log("PASS: Firebase UI mock admin drafts, import, Auth gate and published read-only ("+
+  console.log("PASS: Firebase mock admin preview toggle, live storefront search, Auth gate ("+
     tested+" viewports)");
 })().catch(e=>{console.error(e);process.exitCode=1});
