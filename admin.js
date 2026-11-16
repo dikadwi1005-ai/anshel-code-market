@@ -110,7 +110,7 @@ function renderStats() {
   $("draftProducts").textContent =
     state.products.filter(p => p.status === "draft").length;
   $("publishedProducts").textContent =
-    state.products.filter(p => p.status === "published").length;
+    state.products.filter(p => ["preview","published"].includes(p.status)).length;
   $("totalOrders").textContent = state.orders.length;
 }
 function renderProducts() {
@@ -125,11 +125,16 @@ function renderProducts() {
     return '<tr><td><strong>'+escapeHTML(p.name)+'</strong><small>'+
       escapeHTML(p.category)+' · '+escapeHTML(p.stack)+'</small></td>'+
       '<td>'+fmt(p.price_idr)+'</td>'+
-      '<td><span class="status '+escapeHTML(p.status)+'">'+escapeHTML(p.status)+'</span></td>'+
+      '<td><span class="status '+escapeHTML(p.status)+'">'+
+      (p.status==="preview"?"Pratinjau publik":p.status==="published"?"Terbit":escapeHTML(p.status))+
+      '</span></td>'+
       '<td>'+(asset?'<span class="status published">Arsip tercatat</span>':
                     '<span class="status">Belum tersedia</span>')+'</td>'+
       '<td><div class="row-actions"><button type="button" data-edit="'+
       escapeHTML(p.id)+'">Edit</button>'+
+      (["draft","preview"].includes(p.status) ?
+        '<button type="button" data-visibility="'+escapeHTML(p.id)+'">'+
+        (p.status==="preview"?"Sembunyikan":"Tampilkan di website")+'</button>' : '')+
       (p.status !== "archived" ? '<button type="button" data-archive="'+
       escapeHTML(p.id)+'">Arsipkan</button>' : '')+'</div></td></tr>';
   }).join("") : '<tr><td colspan="5" class="empty-row">Belum ada produk yang cocok.</td></tr>';
@@ -195,8 +200,8 @@ function getFormData() {
       !Number.isSafeInteger(obj.price_idr) || obj.price_idr < 0 ||
       obj.price_idr > 1000000000)
     throw Error("Periksa nama, slug dan harga produk.");
-  if (!["draft","archived"].includes(obj.status))
-    throw Error("Publikasi dikunci hingga ZIP privat dan pembayaran siap.");
+  if (!["draft","preview","archived"].includes(obj.status))
+    throw Error("Penjualan belum aktif. Gunakan Pratinjau publik untuk menampilkan produk.");
   if (obj.features.length > 30)
     throw Error("Maksimum 30 fitur per produk.");
   if (obj.preview_path &&
@@ -215,12 +220,31 @@ async function saveProduct(event) {
     await state.client.saveProduct(value, state.editingId);
     closeEditor();
     await reloadAll();
-    toast("Perubahan draft tersimpan di Firestore.");
+    toast(value.status==="preview"?"Produk pratinjau tampil di katalog publik.":"Perubahan produk tersimpan di Firestore.");
   } catch (error) {
     toast("Gagal menyimpan: "+explain(error));
   } finally {
     state.busy = false;
     $("saveProduct").disabled = false;
+  }
+}
+async function toggleVisibility(id) {
+  const product = state.products.find(p=>p.id===id);
+  if (!product || !["draft","preview"].includes(product.status) || state.busy) return;
+  state.busy = true;
+  try {
+    requireAdmin();
+    const visible = product.status !== "preview";
+    await state.client.setCatalogVisibility(id, visible);
+    await reloadAll();
+    toast(visible
+      ? "Pratinjau produk sudah ditampilkan di website. Pembelian tetap nonaktif."
+      : "Produk disembunyikan dari katalog publik.");
+  } catch (error) {
+    toast("Gagal mengubah tampilan: "+explain(error)+
+      ". Pastikan firebase/firestore.rules terbaru sudah dipasang di Firebase Console.");
+  } finally {
+    state.busy = false;
   }
 }
 async function archiveProduct(id) {
@@ -290,7 +314,9 @@ document.querySelectorAll("[data-section]").forEach(btn=>
 $("productRows").addEventListener("click", event=>{
   const edit = event.target.closest("[data-edit]");
   const archive = event.target.closest("[data-archive]");
+  const visibility = event.target.closest("[data-visibility]");
   if (edit) openEditor(state.products.find(p=>p.id===edit.dataset.edit));
+  if (visibility) toggleVisibility(visibility.dataset.visibility);
   if (archive) archiveProduct(archive.dataset.archive);
 });
 $("closeEditor").addEventListener("click", closeEditor);
