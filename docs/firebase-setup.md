@@ -14,6 +14,21 @@
 | Arsip ZIP privat | Firebase Storage | **Tidak aktif**: memerlukan paket Blaze/penagihan |
 | Pesanan, transfer Mandiri, download | Backend transaksi terverifikasi | **Belum aktif** |
 
+## Perbaikan frontend tidak mengikuti perubahan admin (November 2026)
+
+Frontend sudah memakai Firestore sebagai katalog utama jika proyek Firebase terkonfigurasi. Admin dapat mengubah produk dari **Draft** menjadi **Pratinjau publik** memakai tombol **Tampilkan di website**.
+
+**PENTING:** Aturan Firestore yang berjalan pada proyek `anshelcode` sempat menolak baca `status = preview` dengan kode `permission-denied`. Menambahkan aturan ke GitHub **tidak otomatis memasangnya ke Firebase**. Agar tombol Tampilkan dan katalog berjalan, buka **Firebase Console → anshelcode → Firestore Database → Rules**, ganti seluruh aturan dengan isi [firebase/firestore.rules](../firebase/firestore.rules), lalu klik **Publish**.
+
+Rules ini tidak memberikan publik akses ke draft, pesanan, akun admin, atau source-code ZIP. Produk pratinjau tetap **tidak dapat dibeli**.
+
+Setelah rules terpasang:
+1. Login di `/admin.html`.
+2. Bila belum ada produk, klik **Impor 6 draft konsep**.
+3. Pada satu draft, klik **Tampilkan di website**. Status menjadi **Pratinjau publik**.
+4. Buka `/` dengan refresh. Produk yang tampil berasal dari Firestore; enam contoh statis ada di tombol **Lihat 6 konsep katalog lama**.
+5. Mengedit judul, deskripsi, dan harga ilustratif dari admin kemudian me-refresh frontend harus memperbarui kartu. Klik **Sembunyikan** untuk mengembalikan produk menjadi privat.
+
 ## 1. Buat proyek Firebase khusus
 
 1. Buka [Firebase Console](https://console.firebase.google.com/) dan buat proyek baru, misalnya **anshel-code-market**. Gunakan akun yang berhak mengelola proyek dan mematuhi persyaratan Google.
