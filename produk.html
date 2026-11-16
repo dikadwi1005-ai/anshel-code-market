@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Lihat detail konsep source code, teknologi, rencana fitur, dan status ketersediaan di Anshel Market.">
+<title>Detail Produk — Anshel Market</title>
+<link rel="stylesheet" href="/produk.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="Anshel Market — ke katalog">anshel<span>.</span>market</a>
+    <nav class="global-nav" aria-label="Navigasi utama"><a href="/">Katalog</a><a href="/tentang.html">Tentang</a><a href="/kebijakan.html">Kebijakan</a></nav>
+    <span class="nav-fill"></span><a class="nav-link" href="/">← Semua produk</a>
+  </div>
+</header>
+<div class="status-line"><div class="wrap"><b>KATALOG PRATINJAU</b> Produk belum tersedia untuk dibeli. Harga dan fitur bersifat ilustratif.</div></div>
+<main id="app" class="wrap" aria-live="polite">
+  <div class="not-found"><h1>Memuat detail produk…</h1><p>Informasi katalog akan tampil di sini.</p></div>
+</main>
+<footer class="bottom-bar"><div class="wrap"><a class="brand" href="/">anshel<span>.</span>market</a><div class="footer-links"><a href="/tentang.html">Tentang</a><a href="/kebijakan.html">Kebijakan & lisensi</a><a href="/">Katalog</a></div><span>© <span id="year"></span> Anshel Market</span></div></footer>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/catalog-data.js"></script>
+<script>
+(function(){
+  "use strict";
+  const products=window.AnshelProducts||[];
+  const params=new URLSearchParams(location.search);
+  const raw=params.get("id");
+  const id=raw && /^\d{1,3}$/.test(raw)?Number(raw):null;
+  const p=products.find(item=>item.id===id);
+  const app=document.getElementById("app");
+  const money=value=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(value);
+  const safeText=(str)=>String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const img=p=>"/previews/"+p.kind+".svg";
+  const card=(item)=>'<a class="related-card" href="/produk.html?id='+item.id+'"><img src="'+img(item)+'" alt="Preview visual '+safeText(item.name)+'" loading="lazy" decoding="async" width="1200" height="780"><div class="related-body"><small>'+safeText(item.category)+'</small><h3>'+safeText(item.name)+'</h3><span>'+money(item.price)+'</span></div></a>';
+  const year=document.getElementById("year");year.textContent=new Date().getFullYear();
+  function toast(message){const el=document.getElementById("toast");el.textContent=message;el.classList.add("show");clearTimeout(toast.timeout);toast.timeout=setTimeout(()=>el.classList.remove("show"),3200)}
+  if(!p){
+    document.title="Produk tidak ditemukan — Anshel Market";
+    app.innerHTML='<section class="not-found"><span class="pill">404 / Produk</span><h1>Produk tidak ditemukan.</h1><p>Produk dengan alamat tersebut tidak ada di katalog pratinjau.</p><a class="btn btn-primary" href="/">Kembali ke katalog</a></section>';
+    return;
+  }
+  document.title=p.name+" — Anshel Market";
+  document.querySelector('meta[name="description"]').content="Detail konsep "+p.name+": "+p.desc+" Ketersediaan: belum dijual.";
+  let saved=new Set();try{saved=new Set(JSON.parse(localStorage.getItem("anshel-favorites")||"[]"))}catch{}
+  const related=products.filter(item=>item.id!==p.id).sort((a,b)=>(a.category===p.category?-1:1)-(b.category===p.category?-1:1)).slice(0,3);
+  const features=p.features.map(f=>"<li>"+safeText(f)+"</li>").join("");
+  app.innerHTML=
+   '<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Katalog</a><span>/</span><a href="/?kategori='+encodeURIComponent(p.category)+'">'+safeText(p.category)+'</a><span>/</span><span aria-current="page">'+safeText(p.name)+'</span></nav>'+
+   '<div class="product-hero">'+
+      '<div class="showcase"><div class="gallery-frame"><img src="'+img(p)+'" alt="Ilustrasi konsep antarmuka '+safeText(p.name)+'" width="1200" height="780"><div class="gallery-caption"><span class="gallery-label"><span class="gallery-dot"></span><strong>Pratinjau visual</strong></span><span>Bukan demo aplikasi</span></div></div><div class="under-gallery"><strong>1 gambar konsep</strong><span>Preview untuk menggambarkan arah desain, bukan fitur yang telah selesai.</span></div></div>'+
+      '<section class="summary" aria-label="Informasi '+safeText(p.name)+'"><span class="pill">Konsep · Belum dijual</span><div class="subtype">'+safeText(p.category)+' / Source code</div><h1>'+safeText(p.name)+'</h1><p class="intro">'+safeText(p.desc)+'</p><div class="divider"></div><div class="price-caption">Estimasi harga · belum final</div><div class="price">'+money(p.price)+'</div><p class="price-disclaimer">Harga hanya ilustrasi, belum merupakan penawaran jual.</p><div class="actions"><a class="btn btn-primary" href="/">← Kembali ke katalog</a><button class="btn icon-only" id="favorite" type="button" aria-pressed="false" title="Simpan produk" aria-label="Simpan produk">♡</button><button class="btn icon-only" id="share" type="button" title="Salin tautan" aria-label="Salin tautan produk">↗</button></div><div class="note"><span aria-hidden="true">ⓘ</span><span><b>Belum dapat dibeli.</b> Source code, unduhan, demo, dukungan, dan lisensi final belum tersedia. Detail akan diperbarui jika produk dirilis.</span></div></section>'+
+   '</div>'+
+   '<div class="section-shell"><section class="info-card" id="fitur"><h2 class="section-head">Rencana cakupan fitur</h2><p class="section-copy">Daftar berikut adalah rancangan fitur yang mungkin dicakup, bukan daftar file atau fitur yang sudah diselesaikan.</p><ul class="planned-list">'+features+'</ul></section>'+
+   '<section class="info-card"><h2 class="section-head">Informasi teknis</h2><dl class="spec-list"><div><dt>Kategori</dt><dd>'+safeText(p.category)+'</dd></div><div><dt>Teknologi</dt><dd>'+safeText(p.stack)+'</dd></div><div><dt>Status</dt><dd>Konsep / Pratinjau</dd></div><div><dt>File & demo</dt><dd>Belum tersedia</dd></div><div><dt>Lisensi</dt><dd>Belum diterbitkan</dd></div></dl></section></div>'+
+   '<section class="related-section"><div class="related-head"><h2>Jelajahi produk lainnya</h2><a href="/">Semua produk →</a></div><div class="related-grid">'+related.map(card).join("")+'</div></section>';
+  const saveBtn=document.getElementById("favorite");
+  function syncSave(){const on=saved.has(p.id);saveBtn.setAttribute("aria-pressed",String(on));saveBtn.setAttribute("aria-label",on?"Hapus produk tersimpan":"Simpan produk");saveBtn.textContent=on?"♥":"♡";saveBtn.title=on?"Hapus dari tersimpan":"Simpan produk"}
+  syncSave();
+  saveBtn.addEventListener("click",()=>{if(saved.has(p.id))saved.delete(p.id);else saved.add(p.id);try{localStorage.setItem("anshel-favorites",JSON.stringify([...saved]))}catch{}syncSave();toast(saved.has(p.id)?"Produk disimpan di browser.":"Produk dihapus dari daftar tersimpan.")});
+  document.getElementById("share").addEventListener("click",async()=>{const url=location.origin+"/produk.html?id="+p.id;try{await navigator.clipboard.writeText(url);toast("Tautan produk disalin.")}catch{toast("Tautan: "+url)}});
+})();
+</script>
+</body>
+</html>
