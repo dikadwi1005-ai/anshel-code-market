@@ -1,6 +1,6 @@
 -- Anshel Code Market: foundation schema for a dedicated Supabase project.
 -- NOT applied until a separate project is created and explicitly selected.
--- This file is idempotent for initial setup, and creates NO administrator or live orders.
+-- Run ONCE on a NEW dedicated project. It creates NO administrator or live orders.
 
 create table if not exists public.market_admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
