@@ -8,6 +8,8 @@ on:
       - '*.js'
       - '*.css'
       - 'previews/**'
+      - 'api/**'
+      - 'supabase/**'
       - 'tests/**'
       - '.github/workflows/frontend-smoke.yml'
   pull_request:
@@ -16,6 +18,8 @@ on:
       - '*.js'
       - '*.css'
       - 'previews/**'
+      - 'api/**'
+      - 'supabase/**'
       - 'tests/**'
       - '.github/workflows/frontend-smoke.yml'
 
