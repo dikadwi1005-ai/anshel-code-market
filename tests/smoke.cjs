@@ -92,6 +92,17 @@ const base=(process.env.BASE_URL||'http://127.0.0.1:4173').replace(/\/$/,'');
  await p.goto(base+'/',{waitUntil:'networkidle'});
  await p.keyboard.press('/');
  assert.ok(await p.locator('#search').evaluate(el=>el===document.activeElement));
+ // Admin and published-content pages must fail closed when unconfigured.
+ await p.goto(base+'/admin.html',{waitUntil:'networkidle'});
+ await p.locator('#busyScreen').waitFor({state:'hidden',timeout:15000});
+ const adminSetup=await p.locator('#setupScreen').isVisible();
+ const adminLogin=await p.locator('#loginScreen').isVisible();
+ assert.ok(adminSetup||adminLogin,'admin requires either setup or login');
+ assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'admin no horizontal overflow');
+ if(adminSetup)assert.ok(await p.locator('#setupScreen').innerText().then(s=>s.includes('Database marketplace belum terhubung.')));
+ await p.goto(base+'/rilis.html?slug=does-not-exist',{waitUntil:'networkidle'});
+ assert.ok(await p.locator('#releaseApp h1').isVisible());
+ assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'release page no overflow');
  await browser.close();
- console.log('PASS: '+total+' viewport flows + Mandiri checkout safety, deep links, URL filters and history');
+ console.log('PASS: '+total+' viewport flows + Mandiri checkout, admin setup, published product safety and history');
 })().catch(err=>{console.error(err);process.exitCode=1});
