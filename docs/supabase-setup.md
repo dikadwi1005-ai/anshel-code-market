@@ -1,3 +1,11 @@
+# Arsip: setup Supabase tidak lagi digunakan
+
+**Status: digantikan Firebase.** Jangan mengikuti petunjuk di dokumen ini untuk Anshel Code Market. Panduan terbaru adalah [Firebase Setup](./firebase-setup.md).
+
+Proyek Supabase khusus marketplace sebelumnya belum aktif, sehingga tidak ada data pesanan atau produk dari Supabase yang perlu dimigrasi. File ini disimpan sebagai catatan keputusan teknis lama, **bukan instruksi implementasi**.
+
+---
+
 # Mengaktifkan Supabase — Anshel Code Market
 
 ## Status
