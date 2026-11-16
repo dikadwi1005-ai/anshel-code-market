@@ -7,6 +7,11 @@ for(const [label,width,height] of [["desktop",1440,900],["tablet",768,1024],["mo
  const page=await browser.newPage({viewport:{width,height}});const errors=[];page.on("pageerror",e=>errors.push(e.message));
  const home=await page.goto(base+"/",{waitUntil:"domcontentloaded",timeout:45000});assert.equal(home.status(),200);
  await page.waitForFunction(()=>!document.querySelector(".loading")&&document.querySelector(".smallNotice")?.textContent?.includes("Menghubungkan")===false,{timeout:16000}).catch(()=>{});
+ // Regression guard: the storefront is catalog-first, not a generic marketing hero.
+ await page.locator(".catalogPageHeader h1").waitFor({state:"visible",timeout:12000});
+ assert.equal(await page.locator(".catalogPageHeader h1").innerText(),"Source Code & Template",label+" catalog-first heading");
+ assert.equal(await page.locator(".hero,.heroMetrics,.metricPill").count(),0,label+" no decorative marketing hero");
+ assert.equal(await page.locator('.siteHeader a[href="/admin"]').count(),0,label+" admin route hidden from public navigation");
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,label+" catalog overflow");
  await page.goto(base+"/produk.html?id=1",{waitUntil:"domcontentloaded"});
  await page.locator(".detailDescription h1").waitFor({state:"visible",timeout:14000});
