@@ -7,6 +7,7 @@ export default function AdminEditor({product,onClose,onSave,busy}:{product:Produ
  const [form,setForm]=useState<ProductInput>(blank);
  const [error,setError]=useState("");
  useEffect(()=>{setForm(product?{name:product.name,slug:product.slug,category:product.category,stack:product.stack,description:product.description,price_idr:product.price_idr,status:product.status,features:product.features,preview_path:product.preview_path,license_summary:product.license_summary}:blank);setError("")},[product]);
+ useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape"&&!busy)onClose()};document.addEventListener("keydown",onKey);return()=>document.removeEventListener("keydown",onKey)},[busy,onClose]);
  const edit=<K extends keyof ProductInput>(key:K,value:ProductInput[K])=>setForm(current=>({...current,[key]:value}));
  const submit=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();setError("");
   if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.slug)||form.slug.length>120){setError("Slug harus berupa huruf kecil, angka dan tanda penghubung.");return}

@@ -1,7 +1,7 @@
 "use client";
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getFirestore, onSnapshot, collection, doc, getDoc, getDocs, query, where, limit, addDoc, updateDoc, serverTimestamp, type Firestore, type QueryDocumentSnapshot, type DocumentData } from "firebase/firestore";
-import { initializeAuth, signInWithEmailAndPassword, signOut, inMemoryPersistence, type Auth } from "firebase/auth";
+import { getAuth, initializeAuth, signInWithEmailAndPassword, signOut, inMemoryPersistence, type Auth } from "firebase/auth";
 import type { FirebaseWebConfig, MarketConfig, Product, Order } from "./types";
 
 let appInstance: FirebaseApp | undefined;
@@ -50,7 +50,8 @@ export function subscribePublicProducts(db:Firestore,onProducts:(products:Produc
 }
 export function getAdminAuth(app:FirebaseApp):Auth {
   // Admin session is deliberately memory-only, as in the previous site.
-  adminAuth ||= initializeAuth(app,{persistence:inMemoryPersistence});
+  // initializeAuth melempar auth/already-initialized setelah Fast Refresh; pakai instance yang sudah ada.
+  if(!adminAuth){try{adminAuth=initializeAuth(app,{persistence:inMemoryPersistence})}catch{adminAuth=getAuth(app)}}
   return adminAuth;
 }
 export async function authenticateAdmin(auth:Auth,db:Firestore,email:string,password:string):Promise<string>{

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-const origin = "https://anshel-code-market.vercel.app";
+import { siteUrl } from "@/lib/site";
+const origin = siteUrl;
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   return [
