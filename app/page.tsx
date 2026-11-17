@@ -1,3 +1,4 @@
+export const metadata = { alternates: { canonical: "/" } };
 import CatalogClient from "@/components/catalog-client";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";

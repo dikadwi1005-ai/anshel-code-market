@@ -12,6 +12,15 @@ export default function DetailsClient(){
  const item=list.find(p=>p.slug===identifier||p.id===identifier)||null;
  const loading=mode==="loading";
  const [saved,setSaved]=useState(false);
+ const [availableId,setAvailableId]=useState("");
+ const productId=item?.id;
+ useEffect(()=>{
+   if(!productId)return;
+   const controller=new AbortController();
+   fetch("/api/checkout?product="+encodeURIComponent(productId),{signal:controller.signal})
+     .then(response=>response.json()).then(data=>{if(data.available===true)setAvailableId(productId)}).catch(()=>{});
+   return()=>controller.abort();
+ },[productId]);
  useEffect(()=>{if(!item)return;
   try{const current=JSON.parse(localStorage.getItem("anshel-favorites")||"[]") as Array<string|number>;
     setSaved(current.map(v=>typeof v==="number"?`concept-${v}`:String(v)).includes(item.id));
@@ -26,7 +35,7 @@ export default function DetailsClient(){
  const related=list.filter(p=>p.id!==item.id).slice(0,3);
  return <><nav className="breadcrumbs"><Link href="/">Katalog</Link><span>/</span><span>{item.category}</span><span>/</span><span>{item.name}</span></nav>
   <div className="detailLayout"><div className="detailPreview"><PreviewImage src={item.preview_path} name={item.name} large/><div className="detailMeta">Pratinjau produk</div></div>
-  <section className="detailDescription"><span className="tag">Pratinjau publik</span><p className="eyebrow">{item.category} · Source code</p><h1>{item.name}</h1><p>{item.description}</p><div className="detailMeta"><b>Teknologi</b> · {item.stack}</div><p style={{fontSize:11,marginTop:18,marginBottom:0}}>Harga</p><div className="detailPrice">{rupiah(item.price_idr)}</div><div className="noticeAmber"><strong>Belum dapat dibeli.</strong> Produk masih dalam tahap persiapan. Belum ada ZIP, verifikasi pembayaran, atau unduhan.</div><div className="detailActions"><button className="button" type="button" aria-pressed={saved} onClick={toggle}>{saved?"♥ Tersimpan":"♡ Simpan produk"}</button><Link className="button" href="/">Kembali ke katalog</Link></div></section></div>
+  <section className="detailDescription"><span className="tag">Pratinjau publik</span><p className="eyebrow">{item.category} · Source code</p><h1>{item.name}</h1><p>{item.description}</p><div className="detailMeta"><b>Teknologi</b> · {item.stack}</div><p style={{fontSize:11,marginTop:18,marginBottom:0}}>Harga</p><div className="detailPrice">{rupiah(item.price_idr)}</div>{availableId===item.id?<Link className="button buttonPrimary" href={"/checkout?id="+encodeURIComponent(item.id)}>Beli dengan QRIS</Link>:<div className="noticeAmber">Produk belum tersedia untuk dibeli.</div>}<div className="detailActions"><button className="button" type="button" aria-pressed={saved} onClick={toggle}>{saved?"♥ Tersimpan":"♡ Simpan produk"}</button><Link className="button" href="/">Kembali ke katalog</Link></div></section></div>
   <div className="detailFeatures"><h2>Fitur dan informasi</h2><ul>{item.features.map((f,i)=><li key={i}>{f}</li>)}</ul><div className="detailMeta">Lisensi: {item.license_summary||"Belum ditetapkan"}</div></div>
   {related.length>0&&<section style={{marginTop:35}}><h2 style={{fontSize:21}}>Produk lainnya</h2><div className="relatedGrid">{related.map(p=><ProductCard key={p.id} product={p} saved={false}/>)}</div></section>}
  </>;

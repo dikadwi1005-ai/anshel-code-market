@@ -8,7 +8,7 @@ export default function SiteHeader(){
     <nav className="headerNav" aria-label="Navigasi utama">
       <Link href="/" aria-current={path==="/"?"page":undefined}>Katalog</Link>
       <Link href="/tersimpan" aria-current={path==="/tersimpan"?"page":undefined}>Tersimpan</Link>
-      <Link href="/tentang" aria-current={path==="/tentang"?"page":undefined}>Tentang</Link>
+      <Link href="/akun" aria-current={path==="/akun"?"page":undefined}>{path==="/akun"?"Akun":"Masuk"}</Link>
     </nav>
 
   </div></header>;
