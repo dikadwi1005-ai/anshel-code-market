@@ -16,8 +16,8 @@ export async function POST(request: Request) {
   try {
     const {auth, db} = commerceServices();
     const buyer = await auth.verifyIdToken(token.slice(7), true).catch(() => null);
-    if (!buyer?.email || !buyer.email_verified || buyer.firebase.sign_in_provider !== "google.com") {
-      return Response.json({error: "Masuk dengan akun Google terverifikasi."}, {status: 401});
+    if (!buyer?.email || !buyer.email_verified || !["google.com", "password"].includes(buyer.firebase.sign_in_provider)) {
+      return Response.json({error: "Masuk dengan email yang sudah terverifikasi."}, {status: 401});
     }
     const product = db.collection("market_products").doc(productId);
     const offer = db.collection("market_sale_offers").doc(productId);

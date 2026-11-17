@@ -17,3 +17,19 @@
 .catalogStatus{font-size:11px;line-height:1.65;color:#72849b;margin:0 0 19px}
 .catalogTitleRow h2{font-size:20px}
 @media(max-width:760px){.catalogPageHeader{align-items:flex-start;flex-direction:column;gap:9px;padding-bottom:15px}.catalogPageNote{text-align:left;max-width:none}.catalogStatus{margin-bottom:13px}}
+
+/* Buyer account and checkout sign-in */
+.buyerAccount{width:100%;max-width:470px;margin:0 auto;padding:clamp(22px,5vw,42px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow-wrap:anywhere}
+.buyerAccountHeader{border-bottom:1px solid var(--line);padding-bottom:19px;margin-bottom:22px}
+.buyerAccountHeader h1{font-size:clamp(25px,4vw,34px);line-height:1.1;letter-spacing:-.04em;margin:8px 0 10px}
+.buyerAccountHeader p,.buyerSwitch,.buyerActions p{color:var(--sub);font-size:14px;line-height:1.55;margin:0}
+.buyerForm,.buyerActions{display:grid;gap:14px}
+.buyerForm label{display:grid;gap:7px;font-size:14px;font-weight:650}
+.buyerForm .control{width:100%;min-width:0;min-height:44px}
+.buyerForm .button,.buyerGoogle,.buyerActions .button{min-height:44px;justify-content:center}
+.buyerTextButton{border:0;background:none;padding:2px;color:var(--blueDeep);font:inherit;font-weight:650;text-decoration:underline;justify-self:start}
+.buyerDivider{display:flex;align-items:center;gap:12px;color:var(--sub);font-size:13px;margin:17px 0}
+.buyerDivider::before,.buyerDivider::after{content:"";height:1px;flex:1;background:var(--line)}
+.buyerGoogle{width:100%}
+.buyerSwitch{margin-top:18px;text-align:center}
+.buyerFeedback{background:#f3f6fc;border-left:3px solid var(--blue);padding:10px 12px;font-size:14px}
