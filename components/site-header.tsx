@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BuyerDialog from "./buyer-dialog";
 export default function SiteHeader(){
   const path=usePathname();
   return <header className="siteHeader"><div className="container headerInner">
@@ -8,7 +9,7 @@ export default function SiteHeader(){
     <nav className="headerNav" aria-label="Navigasi utama">
       <Link href="/" aria-current={path==="/"?"page":undefined}>Katalog</Link>
       <Link href="/tersimpan" aria-current={path==="/tersimpan"?"page":undefined}>Tersimpan</Link>
-      <Link href="/akun" aria-current={path==="/akun"?"page":undefined}>{path==="/akun"?"Akun":"Masuk"}</Link>
+      <BuyerDialog />
     </nav>
 
   </div></header>;
