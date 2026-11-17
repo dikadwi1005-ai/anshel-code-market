@@ -1,6 +1,6 @@
 "use client";
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, limit, addDoc, updateDoc, serverTimestamp, type Firestore, type QueryDocumentSnapshot, type DocumentData } from "firebase/firestore";
+import { getFirestore, onSnapshot, collection, doc, getDoc, getDocs, query, where, limit, addDoc, updateDoc, serverTimestamp, type Firestore, type QueryDocumentSnapshot, type DocumentData } from "firebase/firestore";
 import { getAuth, initializeAuth, signInWithEmailAndPassword, signOut, inMemoryPersistence, type Auth } from "firebase/auth";
 import type { FirebaseWebConfig, MarketConfig, Product, Order } from "./types";
 
@@ -25,16 +25,28 @@ function normalizeDocument<T extends {id:string}>(snapshot:QueryDocumentSnapshot
   for(const [key,value] of Object.entries(row))values[key]=(value && typeof value==="object" && "toDate" in value && typeof value.toDate==="function")?value.toDate().toISOString():value;
   return {...values,id:snapshot.id} as T;
 }
-export async function getPublicProducts(db:Firestore):Promise<Product[]> {
-  // Requests must be constrained: Firestore rules are not filters.
-  const results=await Promise.allSettled(["preview","published"].map(async status=>{
-    const snap=await getDocs(query(collection(db,"market_products"),where("status","==",status),limit(24)));
-    return snap.docs.map(row=>normalizeDocument<Product>(row));
-  }));
-  const preview=results[0];
-  if(preview.status==="rejected")throw preview.reason;
-  const rows=results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
-  return [...new Map(rows.map(row=>[row.id,row])).values()].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))).slice(0,24);
+export function subscribePublicProducts(db:Firestore,onProducts:(products:Product[])=>void,onError:()=>void):()=>void {
+  // Keep each query within the existing public Security Rules limit.
+  const results=new Map<string,Product[]>();
+  let failed=false;
+  const emit=()=>{
+    if(failed||results.size!==2)return;
+    const rows=[...results.values()].flat();
+    onProducts([...new Map(rows.map(row=>[row.id,row])).values()]
+      .filter(row=>row.status==="preview"||row.status==="published")
+      .sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))));
+  };
+  const subscriptions=["preview","published"].map(status=>onSnapshot(
+    query(collection(db,"market_products"),where("status","==",status),limit(24)),
+    {includeMetadataChanges:true},
+    snapshot=>{if(snapshot.metadata.fromCache)return;results.set(status,snapshot.docs.map(row=>normalizeDocument<Product>(row)));emit()},
+    error=>{
+      // Older rules may permit preview only; other failures must remain visible.
+      if(status==="published"&&error.code==="permission-denied"){results.set(status,[]);emit();return}
+      failed=true;onError();
+    }
+  ));
+  return()=>subscriptions.forEach(unsubscribe=>unsubscribe());
 }
 export function getAdminAuth(app:FirebaseApp):Auth {
   // Admin session is deliberately memory-only, as in the previous site.
@@ -67,14 +79,5 @@ export async function saveProduct(db:Firestore,form:ProductInput,id?:string){
 }
 export async function setProductStatus(db:Firestore,id:string,status:"draft"|"preview"|"archived"){
   await updateDoc(doc(db,"market_products",id),{status,updated_at:serverTimestamp()});
-}
-export async function importConcepts(db:Firestore,items:ProductInput[]):Promise<number>{
-  const existing=await getDocs(collection(db,"market_products"));
-  const slugs=new Set(existing.docs.map(row=>row.data().slug));
-  let added=0;
-  for(const p of items){if(slugs.has(p.slug))continue;
-    await addDoc(collection(db,"market_products"),{...p,status:"draft",created_at:serverTimestamp(),updated_at:serverTimestamp()});
-    slugs.add(p.slug);added++;}
-  return added;
 }
 export async function closeAdminSession(auth:Auth){await signOut(auth);}
