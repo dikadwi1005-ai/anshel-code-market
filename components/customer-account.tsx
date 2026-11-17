@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {useEffect, useState, type FormEvent} from "react";
 import {browserPopupRedirectResolver, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, reload, signInWithEmailAndPassword, GoogleAuthProvider, initializeAuth, onAuthStateChanged, signInWithPopup, signOut, type Auth, type User} from "firebase/auth";
 import {getApps, initializeApp} from "firebase/app";
@@ -150,7 +151,7 @@ export default function CustomerAccount({productId}: {productId?: string}) {
       </form>
       {mode === "login" && <>
         <div className="buyerDivider">atau</div>
-        <button type="button" className="button buyerGoogle" disabled={busy} onClick={changeSession}>Lanjutkan dengan Google</button>
+        <button type="button" className="button buyerGoogle" disabled={busy} onClick={changeSession}><Image src="/google-sign-in.svg" alt="" width={20} height={20} unoptimized />Lanjutkan dengan Google</button>
       </>}
       <p className="buyerSwitch">{mode === "login" ? "Belum punya akun? " : ""}<button type="button" className="buyerTextButton" onClick={() => switchMode(mode === "login" ? "register" : "login")}>{mode === "login" ? "Daftar" : "Kembali ke masuk"}</button></p>
     </>)}

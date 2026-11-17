@@ -38,3 +38,31 @@
 .buyerDialog::backdrop{background:rgb(15 30 50 / .58)}
 .buyerDialog .buyerAccount{max-width:none;border:0;border-radius:0;box-shadow:none}
 .buyerDialogClose{display:flex;justify-content:flex-end;margin:12px 12px 0}
+
+.marketHeader{background:var(--surface);border-bottom:1px solid var(--line)}
+.marketHeaderInner{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:20px;min-height:72px}
+.marketHeader .logo,.marketFooter .logo{font-size:23px;letter-spacing:-.9px;width:max-content}
+.marketNav{display:flex;align-items:center;gap:6px}
+.marketNav a{padding:9px 14px;border-radius:8px;color:var(--sub);font-size:14px;font-weight:650}
+.marketNav a:hover,.marketNav a[aria-current="page"]{color:var(--blueDeep);background:#eef3fa}
+.marketHeaderAccount{justify-self:end}
+.marketHeaderAccount > .button{min-height:40px;padding-inline:17px;border-color:var(--blueDeep);background:var(--blueDeep);color:#fff}
+.marketFooter{margin-top:64px;background:#eaf0f7;border-top:1px solid #d7e2ef;color:var(--ink)}
+.marketFooterGrid{display:grid;grid-template-columns:2fr 1fr 1.3fr;gap:32px;padding:38px 0}
+.marketFooterBrand p,.marketFooterBottom{color:#52667d;font-size:13px;line-height:1.55}
+.marketFooterGrid nav{display:grid;align-content:start;gap:9px}
+.marketFooterGrid h2{font-size:14px;margin:0 0 4px}
+.marketFooterGrid nav a{font-size:13px;width:fit-content;padding:3px 0}
+.marketFooterGrid nav a:hover{text-decoration:underline}
+.marketFooterGrid nav a span{display:inline-block;margin-inline-start:4px;color:#52667d;font-size:11px}
+.marketFooterBottom{border-top:1px solid #d2deec;padding:16px 0}
+.buyerGoogle{gap:10px;background:#fff;color:#1f1f1f;border-color:#747775;font-size:14px;padding-inline:12px}
+.buyerGoogle img{flex:none}
+@media(max-width:600px){
+  .marketHeaderInner{grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding-block:10px}
+  .marketNav{grid-column:1/-1;grid-row:2;margin-inline:-5px}
+  .marketHeaderAccount{grid-row:1;grid-column:2}
+  .marketFooter{margin-top:40px}
+  .marketFooterGrid{grid-template-columns:1fr 1fr;gap:23px 14px;padding:25px 0}
+  .marketFooterBrand{grid-column:1/-1}
+}
