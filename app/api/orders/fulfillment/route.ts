@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     if (typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) return respond(400, "Nomor pesanan tidak valid.");
     const admin = db.collection("market_admins").doc(actor.uid);
     const order = db.collection("market_orders").doc(id);
+    const audit = db.collection("market_admin_audit").doc();
     const status = await db.runTransaction(async tx => {
       const [adminRecord, orderRecord] = await tx.getAll(admin, order);
       if (!adminRecord.exists) return 403;
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
       if (data.fulfillment_status === "sent") return 200;
       if (data.fulfillment_status !== "awaiting_email") return 409;
       tx.update(order, {fulfillment_status: "sent", fulfilled_at: FieldValue.serverTimestamp(), fulfilled_by: actor.uid});
+      tx.create(audit, {actor_uid: actor.uid, action: "order_fulfilled", order_id: id, created_at: FieldValue.serverTimestamp()});
       return 200;
     });
     return status === 200 ? respond(200) : respond(status, "Pesanan tidak bisa ditandai sudah dikirim.");
