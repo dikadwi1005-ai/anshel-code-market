@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState,type FormEvent} from "react";
-import Link from "next/link";
+import AdminCustomers from "./admin-customers";
 import type {Auth} from "firebase/auth";
 import type {Firestore} from "firebase/firestore";
 import {authenticateAdmin,closeAdminSession,getAdminAuth,initializeMarket,loadMarketConfig,readAdminData,saveProduct,setProductStatus,type ProductInput} from "@/lib/firebase";
@@ -22,7 +22,8 @@ export default function AdminConsole(){
  const [busy,setBusy]=useState(false);
  const [search,setSearch]=useState("");
  const [filter,setFilter]=useState("");
- const [tab,setTab]=useState<"products"|"orders">("products");
+ const [tab,setTab]=useState<"overview"|"products"|"orders"|"customers"|"settings">("overview");
+ const [orderFilter,setOrderFilter]=useState("");
  const [editing,setEditing]=useState<{product:Product|null}|null>(null);
  const [message,setMessage]=useState("");
  const flash=(value:string)=>{setMessage(value)};
@@ -63,40 +64,65 @@ export default function AdminConsole(){
  const sent=orders.filter(order=>order.fulfillment_status==="sent").length;
  const refreshView=async()=>{if(!db||busy)return;setBusy(true);try{await refresh(db);flash("Data diperbarui.")}catch(error){flash(errorMessage(error))}finally{setBusy(false)}};
  const showingProducts=tab==="products";
+ const visibleOrders=orders.filter(order=>!orderFilter||(orderFilter==="delivery"?order.status==="paid"&&order.fulfillment_status==="awaiting_email":order.status===orderFilter));
+ const sections={overview:"Ringkasan",products:"Produk",orders:"Pesanan",customers:"Pelanggan",settings:"Pengaturan"};
+ const descriptions={overview:"Pantau kondisi katalog dan pesanan terbaru.",products:"Kelola produk, harga, dan visibilitas katalog.",orders:"Pantau pembayaran QRIS dan pengiriman file.",customers:"Lihat akun yang terdaftar melalui situs.",settings:"Lihat cara pembayaran, pengiriman, dan akses diatur."};
  const metrics=showingProducts
    ? [["Total produk", products.length], ["Tampil di katalog", publicCount], ["Draft", products.filter(product=>product.status==="draft").length]]
    : [["Pesanan dimuat", orders.length], ["Perlu dikirim", awaiting], ["File dikirim", sent]];
  return <div className="adminWorkspace">
    <aside className="adminSidebar">
-     <Link href="/" className="adminWordmark">anshel<span>.</span>market<small>Admin</small></Link>
+     <div className="adminWordmark">anshel<span>.</span>market<small>Admin</small></div>
      <nav aria-label="Navigasi admin">
-       <button type="button" aria-current={showingProducts?"page":undefined} onClick={()=>setTab("products")}>Produk <span>{products.length}</span></button>
-       <button type="button" aria-current={!showingProducts?"page":undefined} onClick={()=>setTab("orders")}>Pesanan <span>{orders.length}</span></button>
+       {(Object.keys(sections) as Array<keyof typeof sections>).map(key=><button key={key} type="button" aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}>{sections[key]}{key==="orders"&&awaiting>0&&<span>{awaiting}</span>}</button>)}
      </nav>
-     <Link href="/" className="adminStoreLink" target="_blank" rel="noopener noreferrer">Buka toko <span aria-hidden="true">↗</span></Link>
    </aside>
    <main className="adminContent">
      <header className="adminTopbar">
-       <span>Dashboard / {showingProducts?"Produk":"Pesanan"}</span>
+       <span>Admin / {sections[tab]}</span>
        <div className="adminIdentity"><span>{adminEmail}</span><button type="button" className="button" onClick={logout}>Keluar</button></div>
      </header>
      <div className="adminContentInner">
        <header className="adminSectionHead">
-         <div><h1>{showingProducts?"Produk":"Pesanan"}</h1><p>{showingProducts?"Kelola produk, harga, dan visibilitas katalog.":"Pantau pembayaran QRIS dan pengiriman file."}</p></div>
+         <div><h1>{sections[tab]}</h1><p>{descriptions[tab]}</p></div>
          {showingProducts&&<button type="button" className="button buttonPrimary" onClick={()=>setEditing({product:null})}>Tambah produk</button>}
        </header>
-       <dl className="adminSummary">
+       {(tab==="products"||tab==="orders")&&<dl className="adminSummary">
          {metrics.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
-       </dl>
+       </dl>}
        {message&&<p className="adminToast" role="status">{message}</p>}
-       <section className="adminDataPanel" aria-label={showingProducts?"Daftar produk":"Daftar pesanan"}>
+       {tab==="overview"&&<>
+         <dl className="adminSummary">
+           <div><dt>Produk publik</dt><dd>{publicCount}</dd></div>
+           <div><dt>Pesanan terbaru dimuat</dt><dd>{orders.length}</dd></div>
+           <div><dt>Menunggu pengiriman</dt><dd>{awaiting}</dd></div>
+         </dl>
+         <section className="adminDataPanel">
+           <div className="adminDataToolbar"><h2>Perlu perhatian</h2><button className="button" type="button" disabled={busy} onClick={refreshView}>Muat ulang</button></div>
+           <div className="adminOverviewList">
+             <button type="button" className="button" onClick={()=>{setFilter("draft");setTab("products")}}>Tinjau draft produk</button>
+             <button type="button" className="button" onClick={()=>{setOrderFilter("delivery");setTab("orders")}}>Lihat antrean pengiriman</button>
+           </div>
+         </section>
+       </>}
+       {tab==="customers"&&auth?.currentUser&&<AdminCustomers user={auth.currentUser}/>}
+       {tab==="settings"&&<section className="adminDataPanel">
+         <div className="adminDataToolbar"><h2>Konfigurasi operasional</h2></div>
+         <dl className="adminSettingsList">
+           <div><dt>Pembayaran</dt><dd>QRIS melalui SumoPod. Aktivasi checkout dikelola di konfigurasi server.</dd></div>
+           <div><dt>Pengiriman</dt><dd>Admin mengirim file secara manual melalui email, lalu memperbarui status di Pesanan.</dd></div>
+           <div><dt>Akun pembeli</dt><dd>Email dan kata sandi atau Google. Checkout mensyaratkan email terverifikasi.</dd></div>
+           <div><dt>Akses admin</dt><dd>{adminEmail}. Hak akses dikelola melalui Firebase.</dd></div>
+         </dl>
+       </section>}
+       {(tab==="products"||tab==="orders")&&<section className="adminDataPanel" aria-label={showingProducts?"Daftar produk":"Daftar pesanan"}>
          <div className="adminDataToolbar">
            {showingProducts ? <>
              <input className="control" type="search" aria-label="Cari produk" placeholder="Cari produk…" value={search} onChange={e=>setSearch(e.target.value)}/>
              <select className="control" value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Status produk">
                <option value="">Semua status</option><option value="draft">Draft</option><option value="preview">Pratinjau publik</option><option value="published">Terbit lama</option><option value="archived">Arsip</option>
              </select>
-           </> : <h2>Daftar pesanan</h2>}
+           </> : <><h2>Daftar pesanan</h2><select className="control" aria-label="Status pesanan" value={orderFilter} onChange={event=>setOrderFilter(event.target.value)}><option value="">Semua pesanan</option><option value="pending">Menunggu pembayaran</option><option value="paid">Lunas</option><option value="delivery">Perlu dikirim</option><option value="failed">Gagal</option><option value="expired">Kedaluwarsa</option></select></>}
            <button type="button" className="button" disabled={busy} onClick={refreshView}>Muat ulang</button>
          </div>
          {showingProducts ? rows.length ? <div className="adminTableWrap"><table className="adminTable">
@@ -113,16 +139,16 @@ export default function AdminConsole(){
              </div></td>
            </tr>)}</tbody>
          </table></div> : <div className="adminDataEmpty"><h2>{products.length?"Produk tidak ditemukan":"Belum ada produk"}</h2><p>{products.length?"Coba kata kunci atau status lain.":"Klik Tambah produk untuk mulai menyiapkan katalog."}</p></div>
-         : orders.length ? <div className="adminTableWrap"><table className="adminTable">
+         : visibleOrders.length ? <div className="adminTableWrap"><table className="adminTable">
            <thead><tr><th scope="col">Pesanan</th><th scope="col">Pembeli</th><th scope="col">Nominal</th><th scope="col">Pembayaran</th><th scope="col">Pengiriman</th></tr></thead>
-           <tbody>{orders.map(order=><tr key={order.id}>
+           <tbody>{visibleOrders.map(order=><tr key={order.id}>
              <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)} · {order.created_at?new Date(order.created_at).toLocaleString("id-ID"):"—"}</small></td>
              <td>{order.buyer_email||"—"}</td><td>{rupiah(order.amount_idr)}</td>
              <td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{{paid:"Lunas", pending:"Menunggu", creating:"Sedang dibuat", expired:"Kedaluwarsa", failed:"Gagal"}[order.status]||order.status}</span></td>
              <td>{order.fulfillment_status==="sent"?"Sudah dikirim":order.status==="paid"&&order.fulfillment_status==="awaiting_email"?<div className="adminDelivery"><span>Menunggu pengiriman</span><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(order.id)}>Tandai sudah dikirim</button></div>:"—"}</td>
            </tr>)}</tbody>
-         </table></div> : <div className="adminDataEmpty"><h2>Belum ada pesanan</h2><p>Pesanan akan muncul setelah pembeli memulai checkout. Setelah pembayaran lunas, kirim file ke email pembeli lalu tandai pengiriman selesai di sini.</p></div>}
-       </section>
+         </table></div> : <div className="adminDataEmpty"><h2>{orders.length?"Tidak ada pesanan dengan status ini":"Belum ada pesanan"}</h2><p>{orders.length?"Pilih filter lain untuk melihat pesanan.":"Pesanan akan muncul setelah pembeli memulai checkout. Setelah lunas, kirim file ke email pembeli lalu tandai pengiriman selesai di sini."}</p></div>}
+       </section>}
      </div>
    </main>
    {editing&&<AdminEditor product={editing.product} onClose={()=>{if(!busy)setEditing(null)}} onSave={handleSave} busy={busy}/>}

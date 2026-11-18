@@ -117,3 +117,10 @@
  .adminSummary div{padding:9px}
  .adminSummary dt{font-size:11px}
 }
+
+.adminOverviewList{display:flex;flex-wrap:wrap;gap:10px;padding:0 15px 18px}
+.adminSettingsList{display:grid;gap:0;margin:0}
+.adminSettingsList div{display:grid;grid-template-columns:minmax(100px,1fr) 3fr;gap:15px;padding:16px;border-top:1px solid var(--line)}
+.adminSettingsList dt{font-weight:700}
+.adminSettingsList dd{margin:0;color:#536479;overflow-wrap:anywhere}
+@media(max-width:720px){.adminSidebar nav{flex-wrap:wrap}.adminSidebar nav button{min-width:100px}.adminSettingsList div{grid-template-columns:1fr;gap:5px}}
