@@ -43,6 +43,7 @@ jobs:
         run: |
           npm run typecheck
           node tests/public-products.cjs
+          node tests/order-email.cjs
       - name: Build Next.js
         run: npm run build
       - name: Install browser test tooling
