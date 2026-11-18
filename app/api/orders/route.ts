@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         id: doc.id,
         amount: data.amount_idr,
         status: data.status,
-        fulfillment: data.fulfillment_status === "awaiting_email" ? "awaiting_email" : null,
+        fulfillment: ["awaiting_email", "sent"].includes(data.fulfillment_status) ? data.fulfillment_status : null,
         created: data.created_at?.toDate?.().toISOString() ?? "",
       }];
     }).sort((a, b) => b.created.localeCompare(a.created)).slice(0, 20);

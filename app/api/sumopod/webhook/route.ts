@@ -40,8 +40,16 @@ export async function POST(request: Request) {
     const result = await db.runTransaction(async tx => {
       const data = (await tx.get(order)).data();
       if (!data || data.payment_mode !== mode) return 409;
-      if (data.status === "creating") return 503;
-      if (typeof data.payment_id !== "string" || event.data.payment_id !== data.payment_id) return 409;
+      const paymentId = event.data.payment_id;
+      if (typeof paymentId !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(paymentId)) return 409;
+      if (data.status === "creating") {
+        if (kind !== "payment.completed") return 503;
+        // A verified completion can recover a payment whose creation response was lost.
+        if (!matchesCompletedPayment(event, {orderId: id, paymentId, amount: data.amount_idr})) return 409;
+        tx.update(order, {payment_id: paymentId, status: "paid", paid_at: FieldValue.serverTimestamp(), fulfillment_status: "awaiting_email"});
+        return 204;
+      }
+      if (paymentId !== data.payment_id) return 409;
 
       if (kind === "payment.completed") {
         if (!matchesCompletedPayment(event, {orderId: id, paymentId: data.payment_id, amount: data.amount_idr})) return 409;

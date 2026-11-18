@@ -37,6 +37,7 @@ export default function BuyerOrders({user}: {user: User}) {
       {orders.map(order => <li key={order.id}>
         <strong>{labels[order.status]}</strong> · {rupiah(order.amount)}
         <p>Nomor pesanan: {order.id}</p>
+        {order.fulfillment === "sent" && <p>File sudah dikirim melalui email.</p>}
         {order.fulfillment === "awaiting_email" && <p>Menunggu pengiriman melalui email.</p>}
       </li>)}
     </ul> : <p>Belum ada pesanan.</p>}

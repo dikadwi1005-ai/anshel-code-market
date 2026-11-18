@@ -60,7 +60,14 @@ export async function POST(request: Request) {
         typeof payment.payment_id !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(payment.payment_id)) {
       throw Error("Invalid payment response");
     }
-    await order.update({ status: "pending", payment_id: payment.payment_id });
+    const payable = await db.runTransaction(async tx => {
+      const saved = (await tx.get(order)).data();
+      if (saved?.status === "paid" && saved.payment_id === payment.payment_id) return false;
+      if (saved?.status !== "creating") throw Error("Order no longer pending creation");
+      tx.update(order, {status: "pending", payment_id: payment.payment_id});
+      return true;
+    });
+    if (!payable) return Response.json({url: siteUrl + "/akun"}, {headers: {"Cache-Control":"no-store"}});
     return Response.json({ url: link.href }, { headers: {"Cache-Control": "no-store"} });
   } catch {
     return Response.json({error: "Link pembayaran belum dapat dibuat. Silakan coba lagi nanti."}, {status: 503});
