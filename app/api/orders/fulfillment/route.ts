@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       if (!data) return 404;
       if (data.status !== "paid") return 409;
       if (data.fulfillment_status === "sent") return 200;
-      if (data.fulfillment_status !== "awaiting_email") return 409;
+      if (data.fulfillment_status !== "awaiting_email" || (data.delivery_lease_until_ms ?? 0) > Date.now()) return 409;
       tx.update(order, {fulfillment_status: "sent", fulfilled_at: FieldValue.serverTimestamp(), fulfilled_by: actor.uid});
       tx.create(audit, {actor_uid: actor.uid, action: "order_fulfilled", order_id: id, created_at: FieldValue.serverTimestamp()});
       return 200;

@@ -36,6 +36,8 @@ export async function POST(request: Request) {
       tx.set(marker, {retry_after: now + 60000});
       tx.create(order, {
         buyer_uid: buyer.uid, buyer_email: buyer.email, product_id: productId,
+        delivery_blob_path: offerSnap.get("blob_path") ?? null,
+        delivery_file_name: offerSnap.get("file_name"),
         amount_idr: item.price_idr, currency: "IDR", payment_mode: settings.mode,
         status: "creating", created_at: FieldValue.serverTimestamp(),
       });

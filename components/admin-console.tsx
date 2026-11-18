@@ -53,6 +53,17 @@ export default function AdminConsole(){
    if(active){setAuth(auth);setDb(db);setMode("login")}
   }catch(error){if(active){flash(errorMessage(error));setMode("setup")}}
  })();return()=>{active=false}},[]);
+ const retryEmail=async(id:string)=>{
+  if(!auth?.currentUser||!db||busy)return;
+  if(!confirm("Kirim ZIP pesanan ini ke email pembeli?"))return;
+  setBusy(true);
+  try{
+   const response=await fetch("/api/admin/order-email?order="+encodeURIComponent(id),{method:"POST",headers:{Authorization:"Bearer "+await auth.currentUser.getIdToken()}});
+   const result=await response.json();
+   if(!response.ok)throw Error(result.error||"Email belum dapat dikirim.");
+   await refresh(db);flash("Email diterima oleh layanan pengirim.");
+  }catch(error){flash(errorMessage(error))}finally{setBusy(false)}
+ };
  const finishDelivery=async(id:string)=>{
   if(!auth?.currentUser||!db||busy||!confirm("Tandai pesanan ini setelah file benar-benar dikirim melalui email?"))return;
   setBusy(true);
@@ -178,7 +189,7 @@ export default function AdminConsole(){
              <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)} · {order.created_at?new Date(order.created_at).toLocaleString("id-ID"):"—"}</small></td>
              <td>{order.buyer_email||"—"}</td><td>{rupiah(order.amount_idr)}</td>
              <td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{orderLabels[order.status]||order.status}</span></td>
-             <td>{order.fulfillment_status==="sent"?"Sudah dikirim":order.status==="paid"&&order.fulfillment_status==="awaiting_email"?<div className="adminDelivery"><span>Menunggu pengiriman</span><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(order.id)}>Tandai sudah dikirim</button></div>:"—"}</td>
+             <td>{order.fulfillment_status==="sent"?"Sudah dikirim":order.status==="paid"&&order.fulfillment_status==="awaiting_email"?<div className="adminDelivery"><span>Menunggu pengiriman</span><button className="button buttonMini" type="button" disabled={busy} onClick={()=>retryEmail(order.id)}>Kirim ulang email</button><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(order.id)}>Tandai sudah dikirim</button></div>:"—"}</td>
            </tr>)}</tbody>
          </table></div> : <div className="adminDataEmpty"><h2>{orders.length?"Tidak ada pesanan dengan status ini":"Belum ada pesanan"}</h2><p>{orders.length?"Pilih filter lain untuk melihat pesanan.":"Pesanan akan muncul setelah pembeli memulai checkout. Setelah lunas, kirim file ke email pembeli lalu tandai pengiriman selesai di sini."}</p></div>}
        </section>}

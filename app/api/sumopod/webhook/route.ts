@@ -1,3 +1,5 @@
+import {after} from "next/server";
+import {deliveryEnabled, sendOrderEmail} from "@/lib/server/order-email";
 import { FieldValue } from "firebase-admin/firestore";
 import { commerceServices } from "@/lib/server/commerce";
 import { matchesCompletedPayment, verifySumopodSignature } from "@/lib/server/sumopod-verification";
@@ -63,6 +65,9 @@ export async function POST(request: Request) {
       }
       return 204;
     });
+    if(result===204&&kind==="payment.completed"&&deliveryEnabled()){
+      after(async()=>{await sendOrderEmail(id).catch(()=>{})});
+    }
     return new Response(null, {status: result});
   } catch {
     return new Response(null, {status: 503});

@@ -7,7 +7,7 @@ import {rupiah} from "@/lib/utils";
 type Totals={orders:number;paid:number;gross:number;pending:number;expired:number;failed:number;creating:number;awaiting:number;sent:number};
 type Event={id:string;action:string;actor?:string;reference?:string;active:boolean;date?:string};
 type Result={totals?:Totals;events?:Event[];next?:string|null};
-const actions:Record<string,string>={sale_readiness_updated:"Kesiapan jual diperbarui",order_fulfilled:"File ditandai sudah dikirim"};
+const actions:Record<string,string>={sale_readiness_updated:"Kesiapan jual diperbarui",order_fulfilled:"File ditandai sudah dikirim",order_email_accepted:"Email diterima layanan pengirim"};
 function localDate(offset:number){
   return new Date(Date.now()+7*3600000+offset*86400000).toISOString().slice(0,10);
 }
