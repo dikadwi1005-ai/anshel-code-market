@@ -8,6 +8,18 @@ import type {Product,Order} from "@/lib/types";
 import {errorMessage,rupiah} from "@/lib/utils";
 import AdminEditor from "./admin-editor";
 
+const icons = {
+ overview: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
+ products: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
+ orders: "M6 4h12v16l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+ customers: "M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M12 7a3 3 0 11-6 0 3 3 0 016 0zM16 5a3 3 0 010 6M22 21v-2a4 4 0 00-3-4",
+ settings: "M4 6h16M4 12h16M4 18h16M8 4v4M16 10v4M10 16v4",
+} as const;
+const orderLabels: Record<string,string> = {paid:"Lunas",pending:"Menunggu",creating:"Sedang dibuat",expired:"Kedaluwarsa",failed:"Gagal"};
+function AdminIcon({name}: {name:keyof typeof icons}) {
+ return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"><path d={icons[name]}/></svg>;
+}
+
 type Mode="connecting"|"setup"|"login"|"ready";
 export default function AdminConsole(){
  const [mode,setMode]=useState<Mode>("connecting");
@@ -64,6 +76,8 @@ export default function AdminConsole(){
  const sent=orders.filter(order=>order.fulfillment_status==="sent").length;
  const refreshView=async()=>{if(!db||busy)return;setBusy(true);try{await refresh(db);flash("Data diperbarui.")}catch(error){flash(errorMessage(error))}finally{setBusy(false)}};
  const showingProducts=tab==="products";
+ const recentOrders=[...orders].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
+ const drafts=products.filter(product=>product.status==="draft").length;
  const visibleOrders=orders.filter(order=>!orderFilter||(orderFilter==="delivery"?order.status==="paid"&&order.fulfillment_status==="awaiting_email":order.status===orderFilter));
  const sections={overview:"Ringkasan",products:"Produk",orders:"Pesanan",customers:"Pelanggan",settings:"Pengaturan"};
  const descriptions={overview:"Pantau kondisi katalog dan pesanan terbaru.",products:"Kelola produk, harga, dan visibilitas katalog.",orders:"Pantau pembayaran QRIS dan pengiriman file.",customers:"Lihat akun yang terdaftar melalui situs.",settings:"Lihat cara pembayaran, pengiriman, dan akses diatur."};
@@ -73,14 +87,15 @@ export default function AdminConsole(){
  return <div className="adminWorkspace">
    <aside className="adminSidebar">
      <div className="adminWordmark">anshel<span>.</span>market<small>Admin</small></div>
+     <span className="adminNavLabel">Operasional</span>
      <nav aria-label="Navigasi admin">
-       {(Object.keys(sections) as Array<keyof typeof sections>).map(key=><button key={key} type="button" aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}>{sections[key]}{key==="orders"&&awaiting>0&&<span>{awaiting}</span>}</button>)}
+       {(Object.keys(sections) as Array<keyof typeof sections>).map(key=><button key={key} type="button" aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}><span className="adminNavItem"><AdminIcon name={key}/>{sections[key]}</span>{key==="orders"&&awaiting>0&&<span className="adminNavBadge">{awaiting}</span>}</button>)}
      </nav>
    </aside>
    <main className="adminContent">
      <header className="adminTopbar">
        <span>Admin / {sections[tab]}</span>
-       <div className="adminIdentity"><span>{adminEmail}</span><button type="button" className="button" onClick={logout}>Keluar</button></div>
+       <div className="adminIdentity"><div className="adminProfile"><span className="adminAvatar" aria-hidden="true">{adminEmail.slice(0,2).toUpperCase()}</span><span><strong>Administrator</strong><small>{adminEmail}</small></span></div><button type="button" className="button" onClick={logout}>Keluar</button></div>
      </header>
      <div className="adminContentInner">
        <header className="adminSectionHead">
@@ -92,18 +107,35 @@ export default function AdminConsole(){
        </dl>}
        {message&&<p className="adminToast" role="status">{message}</p>}
        {tab==="overview"&&<>
-         <dl className="adminSummary">
-           <div><dt>Produk publik</dt><dd>{publicCount}</dd></div>
-           <div><dt>Pesanan terbaru dimuat</dt><dd>{orders.length}</dd></div>
-           <div><dt>Menunggu pengiriman</dt><dd>{awaiting}</dd></div>
+         <dl className="adminSummary adminOverviewMetrics">
+           <div><AdminIcon name="products"/><dt>Produk publik</dt><dd>{publicCount}</dd><small>{products.length} produk tercatat</small></div>
+           <div><AdminIcon name="orders"/><dt>Pesanan terbaru</dt><dd>{orders.length}</dd><small>Dari daftar yang dimuat</small></div>
+           <div><AdminIcon name="customers"/><dt>Siap dikirim</dt><dd>{awaiting}</dd><small>Pesanan lunas yang menunggu file</small></div>
          </dl>
-         <section className="adminDataPanel">
-           <div className="adminDataToolbar"><h2>Perlu perhatian</h2><button className="button" type="button" disabled={busy} onClick={refreshView}>Muat ulang</button></div>
-           <div className="adminOverviewList">
-             <button type="button" className="button" onClick={()=>{setFilter("draft");setTab("products")}}>Tinjau draft produk</button>
-             <button type="button" className="button" onClick={()=>{setOrderFilter("delivery");setTab("orders")}}>Lihat antrean pengiriman</button>
+         <div className="adminOverview">
+           <section className="adminDataPanel">
+             <div className="adminDataToolbar adminOverviewToolbar"><div><h2>Pesanan terbaru</h2><p>Pembayaran dan pengiriman</p></div><button type="button" className="button" onClick={()=>{setOrderFilter("");setTab("orders")}}>Lihat pesanan</button></div>
+             {recentOrders.length ? <div className="adminTableWrap"><table className="adminTable adminRecentTable">
+               <thead><tr><th scope="col">Produk</th><th scope="col">Nominal</th><th scope="col">Status</th></tr></thead>
+               <tbody>{recentOrders.map(order=><tr key={order.id}>
+                 <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)}</small></td>
+                 <td>{rupiah(order.amount_idr)}</td><td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{orderLabels[order.status]||order.status}</span></td>
+               </tr>)}</tbody>
+             </table></div> : <div className="adminDataEmpty adminRecentEmpty"><div className="adminEmptyIcon"><AdminIcon name="orders"/></div><h3>Belum ada pesanan</h3><p>Pesanan pertama akan muncul di sini setelah pembeli memulai checkout.</p></div>}
+           </section>
+           <div className="adminOverviewRail">
+             <section className="adminDataPanel adminRailPanel">
+               <h2>Antrean pengiriman</h2>
+               <p>{awaiting?awaiting+" pesanan sudah lunas dan menunggu file.":"Tidak ada pesanan yang menunggu file."}</p>
+               <button className="adminActionLink" type="button" onClick={()=>{setOrderFilter("delivery");setTab("orders")}}>Buka antrean <span aria-hidden="true">→</span></button>
+             </section>
+             <section className="adminDataPanel adminRailPanel">
+               <h2>Kondisi katalog</h2>
+               <dl className="adminCatalogSplit"><div><dt>Publik</dt><dd>{publicCount}</dd></div><div><dt>Draft</dt><dd>{drafts}</dd></div><div><dt>Arsip</dt><dd>{products.filter(product=>product.status==="archived").length}</dd></div></dl>
+               <button className="adminActionLink" type="button" onClick={()=>{setFilter("draft");setTab("products")}}>Tinjau draft <span aria-hidden="true">→</span></button>
+             </section>
            </div>
-         </section>
+         </div>
        </>}
        {tab==="customers"&&auth?.currentUser&&<AdminCustomers user={auth.currentUser}/>}
        {tab==="settings"&&<section className="adminDataPanel">
@@ -144,7 +176,7 @@ export default function AdminConsole(){
            <tbody>{visibleOrders.map(order=><tr key={order.id}>
              <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)} · {order.created_at?new Date(order.created_at).toLocaleString("id-ID"):"—"}</small></td>
              <td>{order.buyer_email||"—"}</td><td>{rupiah(order.amount_idr)}</td>
-             <td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{{paid:"Lunas", pending:"Menunggu", creating:"Sedang dibuat", expired:"Kedaluwarsa", failed:"Gagal"}[order.status]||order.status}</span></td>
+             <td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{orderLabels[order.status]||order.status}</span></td>
              <td>{order.fulfillment_status==="sent"?"Sudah dikirim":order.status==="paid"&&order.fulfillment_status==="awaiting_email"?<div className="adminDelivery"><span>Menunggu pengiriman</span><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(order.id)}>Tandai sudah dikirim</button></div>:"—"}</td>
            </tr>)}</tbody>
          </table></div> : <div className="adminDataEmpty"><h2>{orders.length?"Tidak ada pesanan dengan status ini":"Belum ada pesanan"}</h2><p>{orders.length?"Pilih filter lain untuk melihat pesanan.":"Pesanan akan muncul setelah pembeli memulai checkout. Setelah lunas, kirim file ke email pembeli lalu tandai pengiriman selesai di sini."}</p></div>}

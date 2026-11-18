@@ -124,3 +124,41 @@
 .adminSettingsList dt{font-weight:700}
 .adminSettingsList dd{margin:0;color:#536479;overflow-wrap:anywhere}
 @media(max-width:720px){.adminSidebar nav{flex-wrap:wrap}.adminSidebar nav button{min-width:100px}.adminSettingsList div{grid-template-columns:1fr;gap:5px}}
+
+/* Admin layout and operational overview */
+.adminWorkspace{grid-template-columns:222px minmax(0,1fr);background:#f5f7fb}
+.adminSidebar{position:sticky;top:0;height:100dvh;gap:13px;padding:24px 15px;background:#15263a}
+.adminWordmark{border-bottom:1px solid #33465c;padding:4px 8px 22px;margin-bottom:9px}
+.adminNavLabel{font-size:12px;font-weight:650;color:#b9c9dc;padding-inline:10px}
+.adminSidebar nav button{font-size:14px;font-weight:600}
+.adminSidebar nav .adminNavItem{display:flex;align-items:center;gap:10px;font-size:14px}
+.adminSidebar .adminNavBadge{color:#fff;background:#42658b;border-radius:20px;padding:2px 7px}
+.adminTopbar{min-height:64px}
+.adminProfile{display:flex;align-items:center;gap:9px;min-width:0}
+.adminProfile strong,.adminProfile small{display:block;line-height:1.35}
+.adminProfile strong{color:#263a50}
+.adminProfile small{color:#52647a;font-size:12px;overflow-wrap:anywhere}
+.adminAvatar{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:8px;background:#e6eef8;color:#23496f;font-weight:750}
+.adminOverviewMetrics div{position:relative;padding:16px 18px}
+.adminOverviewMetrics svg{position:absolute;top:16px;right:18px;color:#45658b}
+.adminOverviewMetrics dt{padding-right:22px}
+.adminOverviewMetrics small{font-size:12px;color:#52647a}
+.adminOverview{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(225px,1fr);gap:16px;align-items:start}
+.adminOverviewRail{display:grid;gap:16px;min-width:0}
+.adminOverviewToolbar{justify-content:space-between}
+.adminOverviewToolbar p,.adminRailPanel p{font-size:13px;color:#52647a;margin:4px 0 0;line-height:1.45}
+.adminRailPanel{padding:16px}
+.adminRailPanel h2{font-size:16px;margin:0}
+.adminActionLink{font:inherit;font-size:13px;font-weight:700;border:0;background:transparent;color:#244d7b;padding:6px 0;margin-top:12px;text-align:left}
+.adminActionLink:hover{text-decoration:underline}
+.adminActionLink span{margin-left:4px}
+.adminCatalogSplit{display:grid;gap:0;margin:9px 0 0;font-size:13px}
+.adminCatalogSplit div{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.adminCatalogSplit dt{color:#52647a}
+.adminCatalogSplit dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.adminEmptyIcon{display:grid;place-items:center;background:#ebf1f9;color:#345778;width:40px;height:40px;border-radius:10px;margin:0 auto 14px}
+.adminRecentEmpty h3{font-size:16px;margin:0 0 6px}
+.adminDataPanel .adminRecentTable{min-width:420px}
+@media(max-width:1050px){.adminOverview{grid-template-columns:minmax(0,1fr)}.adminOverviewRail{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.adminWorkspace{grid-template-columns:minmax(0,1fr)}.adminSidebar{position:static;height:auto;gap:6px;padding:12px}.adminWordmark{border:0;margin:0;padding:0 8px}.adminNavLabel{display:none}.adminSidebar nav{flex-wrap:nowrap;overflow:auto;gap:4px}.adminSidebar nav button{flex:none;min-width:0;padding-inline:10px}.adminOverviewMetrics div{padding:10px}.adminOverviewMetrics svg{display:none}.adminOverviewMetrics dt{padding:0}}
+@media(max-width:440px){.adminOverviewRail{grid-template-columns:minmax(0,1fr)}.adminOverviewMetrics small{display:block;line-height:1.2}}
