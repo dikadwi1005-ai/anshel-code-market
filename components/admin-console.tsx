@@ -44,7 +44,7 @@ export default function AdminConsole(){
  };
  const refresh=async(database:Firestore)=>{const data=await readAdminData(database);setProducts(data.products);setOrders(data.orders);setAssets(data.assets)};
  const login=async(event:FormEvent)=>{event.preventDefault();if(!db||!auth||busy)return;setBusy(true);flash("");
-  try{const user=await authenticateAdmin(auth,db,email.trim(),password);setPassword("");await refresh(db);setAdminEmail(user);setMode("ready");flash("Login berhasil, data diambil dari Firestore.")}
+  try{const user=await authenticateAdmin(auth,db,email.trim(),password);setPassword("");await refresh(db);setAdminEmail(user);setMode("ready");flash("")}
   catch(error){setPassword("");flash(errorMessage(error))}finally{setBusy(false)}
  };
  const logout=async()=>{if(auth)await closeAdminSession(auth).catch(()=>{});setProducts([]);setOrders([]);setAssets([]);setAdminEmail("");setPassword("");setMode("login");flash("Sesi admin ditutup.")};
@@ -58,15 +58,73 @@ export default function AdminConsole(){
  if(mode==="connecting")return <div className="loading">Memeriksa konfigurasi Firebase…</div>;
  if(mode==="setup")return <section className="adminSignIn"><div className="adminLoginLogo">ANSHEL MARKET · FIREBASE</div><h1>Database belum terhubung.</h1><p>Dashboard Next.js siap, tetapi konfigurasi Firebase belum dapat dibaca. Periksa environment variables di Vercel dan pastikan proyek `anshelcode` digunakan.</p>{message&&<div className="adminToast" role="alert">{message}</div>}<button className="button" type="button" onClick={()=>location.reload()}>Periksa ulang</button></section>;
  if(mode==="login")return <section className="adminSignIn"><div className="adminLoginLogo">ANSHEL MARKET · ADMINISTRATION</div><h1>Masuk ke Dashboard</h1><p>Gunakan akun Firebase Authentication yang sudah diberikan hak admin. Formulir ini tidak menyediakan pendaftaran publik.</p><form onSubmit={login}><label className="field"><span className="fieldLabel">Email admin</span><input className="control" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label className="field"><span className="fieldLabel">Kata sandi</span><input className="control" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button type="submit" disabled={busy} className="button buttonPrimary">{busy?"Memeriksa…":"Masuk"}</button></form>{message&&<div className="adminToast" role="status">{message}</div>}<p>Sesi tersimpan sementara di memori dan tidak menjadi akses publik.</p></section>;
- return <><div className="adminHead"><div className="adminHeading"><span className="eyebrow">ANSHEL CODE MARKET</span><h1>Dashboard Admin</h1><p>Produk dan status berasal langsung dari Firebase Firestore.</p></div><div className="adminUser"><small>{adminEmail}</small><button className="button" type="button" onClick={logout}>Keluar</button></div></div>
-  <div className="adminMetrics"><div className="adminMetric"><span>Total produk</span><strong>{products.length}</strong></div><div className="adminMetric"><span>Draft</span><strong>{products.filter(p=>p.status==="draft").length}</strong></div><div className="adminMetric"><span>Pratinjau publik</span><strong>{products.filter(p=>["preview","published"].includes(p.status)).length}</strong></div><div className="adminMetric"><span>Pesanan</span><strong>{orders.length}</strong></div></div>
-  {message&&<div className="adminToast" role="status">{message}</div>}
-  <div className="adminColumns"><aside className="adminMenu"><button type="button" aria-pressed={tab==="products"} onClick={()=>setTab("products")}>Produk</button><button type="button" aria-pressed={tab==="orders"} onClick={()=>setTab("orders")}>Pesanan</button><p>Hak admin diperiksa oleh Firebase Authentication dan Firestore Security Rules.</p></aside>
-  <section className="adminMain">{tab==="products"?<><div className="adminMainTop"><div><h2>Kelola Produk</h2><p>Atur status Pratinjau publik agar produk tampil di website. Checkout dan ZIP tetap nonaktif.</p></div><div className="utilityBar"><button className="button buttonPrimary" onClick={()=>setEditing({product:null})}>Tambah produk</button></div></div>
-  <div className="adminTools"><input className="control" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari produk, kategori, atau teknologi"/><select className="control" value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Status produk"><option value="">Semua status</option><option value="draft">Draft</option><option value="preview">Pratinjau publik</option><option value="published">Terbit lama</option><option value="archived">Arsip</option></select><button className="button" disabled={busy} onClick={()=>db&&refresh(db).then(()=>flash("Data diperbarui.")).catch(e=>flash(errorMessage(e)))}>Muat ulang</button></div>
-  <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Produk</th><th>Harga</th><th>Status</th><th>ZIP privat</th><th>Aksi</th></tr></thead><tbody>{rows.length?rows.map(p=><tr key={p.id}><td><strong>{p.name}</strong><small>{p.category} · {p.stack}</small></td><td>{rupiah(p.price_idr)}</td><td><span className={p.status==="preview"?"tag tagGreen":"tag tagGray"}>{p.status==="preview"?"Pratinjau publik":p.status}</span></td><td><span className="tag tagGray">{assets.some(a=>a.product_id===p.id)?"Arsip tercatat":"Belum tersedia"}</span></td><td><div className="adminButtons"><button className="button buttonMini" type="button" onClick={()=>setEditing({product:p})}>Edit</button>{["draft","preview"].includes(p.status)&&<button type="button" className="button buttonMini" disabled={busy} onClick={()=>toggle(p)}>{p.status==="preview"?"Sembunyikan":"Tampilkan di website"}</button>}{p.status!=="archived"&&<button type="button" className="button buttonMini" disabled={busy} onClick={()=>archive(p)}>Arsipkan</button>}</div></td></tr>):<tr><td colSpan={5}>Belum ada produk yang cocok.</td></tr>}</tbody></table></div>
-  </>:<><div className="adminMainTop"><div><h2>Daftar Pesanan</h2><p>Pesanan lunas yang menunggu email perlu ditangani oleh admin.</p></div><button className="button" onClick={()=>db&&refresh(db).catch(e=>flash(errorMessage(e)))}>Muat ulang</button></div><div className="adminTableWrap"><table className="adminTable"><thead><tr><th>ID</th><th>Produk</th><th>Nominal</th><th>Status</th><th>Email pembeli</th><th>Dibuat</th></tr></thead><tbody>{orders.length?orders.map(o=><tr key={o.id}><td>{o.id.slice(0,8)}</td><td>{products.find(p=>p.id===o.product_id)?.name||"Produk"}</td><td>{rupiah(o.amount_idr)}</td><td>{o.status === "paid" ? "Lunas" : o.status}{o.fulfillment_status === "awaiting_email" && <small>Menunggu pengiriman email</small>}{o.fulfillment_status === "sent" && <small>File sudah dikirim</small>}</td><td>{o.buyer_email || "—"}{o.status==="paid" && o.fulfillment_status==="awaiting_email" && <div><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(o.id)}>Tandai sudah dikirim</button></div>}</td><td>{o.created_at?new Date(o.created_at).toLocaleString("id-ID"):"—"}</td></tr>):<tr><td colSpan={6}>Belum ada pesanan.</td></tr>}</tbody></table></div></>}
-  </section></div>
-  {editing&&<AdminEditor product={editing.product} onClose={()=>{if(!busy)setEditing(null)}} onSave={handleSave} busy={busy}/>}
- </>;
+ const publicCount=products.filter(product=>["preview","published"].includes(product.status)).length;
+ const awaiting=orders.filter(order=>order.status==="paid" && order.fulfillment_status==="awaiting_email").length;
+ const sent=orders.filter(order=>order.fulfillment_status==="sent").length;
+ const refreshView=async()=>{if(!db||busy)return;setBusy(true);try{await refresh(db);flash("Data diperbarui.")}catch(error){flash(errorMessage(error))}finally{setBusy(false)}};
+ const showingProducts=tab==="products";
+ const metrics=showingProducts
+   ? [["Total produk", products.length], ["Tampil di katalog", publicCount], ["Draft", products.filter(product=>product.status==="draft").length]]
+   : [["Pesanan dimuat", orders.length], ["Perlu dikirim", awaiting], ["File dikirim", sent]];
+ return <div className="adminWorkspace">
+   <aside className="adminSidebar">
+     <Link href="/" className="adminWordmark">anshel<span>.</span>market<small>Admin</small></Link>
+     <nav aria-label="Navigasi admin">
+       <button type="button" aria-current={showingProducts?"page":undefined} onClick={()=>setTab("products")}>Produk <span>{products.length}</span></button>
+       <button type="button" aria-current={!showingProducts?"page":undefined} onClick={()=>setTab("orders")}>Pesanan <span>{orders.length}</span></button>
+     </nav>
+     <Link href="/" className="adminStoreLink" target="_blank" rel="noopener noreferrer">Buka toko <span aria-hidden="true">↗</span></Link>
+   </aside>
+   <main className="adminContent">
+     <header className="adminTopbar">
+       <span>Dashboard / {showingProducts?"Produk":"Pesanan"}</span>
+       <div className="adminIdentity"><span>{adminEmail}</span><button type="button" className="button" onClick={logout}>Keluar</button></div>
+     </header>
+     <div className="adminContentInner">
+       <header className="adminSectionHead">
+         <div><h1>{showingProducts?"Produk":"Pesanan"}</h1><p>{showingProducts?"Kelola produk, harga, dan visibilitas katalog.":"Pantau pembayaran QRIS dan pengiriman file."}</p></div>
+         {showingProducts&&<button type="button" className="button buttonPrimary" onClick={()=>setEditing({product:null})}>Tambah produk</button>}
+       </header>
+       <dl className="adminSummary">
+         {metrics.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+       </dl>
+       {message&&<p className="adminToast" role="status">{message}</p>}
+       <section className="adminDataPanel" aria-label={showingProducts?"Daftar produk":"Daftar pesanan"}>
+         <div className="adminDataToolbar">
+           {showingProducts ? <>
+             <input className="control" type="search" aria-label="Cari produk" placeholder="Cari produk…" value={search} onChange={e=>setSearch(e.target.value)}/>
+             <select className="control" value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Status produk">
+               <option value="">Semua status</option><option value="draft">Draft</option><option value="preview">Pratinjau publik</option><option value="published">Terbit lama</option><option value="archived">Arsip</option>
+             </select>
+           </> : <h2>Daftar pesanan</h2>}
+           <button type="button" className="button" disabled={busy} onClick={refreshView}>Muat ulang</button>
+         </div>
+         {showingProducts ? rows.length ? <div className="adminTableWrap"><table className="adminTable">
+           <thead><tr><th scope="col">Produk</th><th scope="col">Harga</th><th scope="col">Status</th><th scope="col">File privat</th><th scope="col">Aksi</th></tr></thead>
+           <tbody>{rows.map(product=><tr key={product.id}>
+             <td><strong>{product.name}</strong><small>{product.category} · {product.stack}</small></td>
+             <td>{rupiah(product.price_idr)}</td>
+             <td><span className={["preview","published"].includes(product.status)?"tag tagGreen":"tag tagGray"}>{{draft:"Draft", preview:"Pratinjau publik", published:"Terbit lama", archived:"Arsip"}[product.status]}</span></td>
+             <td>{assets.some(asset=>asset.product_id===product.id)?"Tercatat":"Belum tersedia"}</td>
+             <td><div className="adminButtons">
+               <button type="button" className="button buttonMini" onClick={()=>setEditing({product})}>Edit</button>
+               {["draft","preview"].includes(product.status)&&<button type="button" className="button buttonMini" disabled={busy} onClick={()=>toggle(product)}>{product.status==="preview"?"Sembunyikan":"Tampilkan di website"}</button>}
+               {product.status!=="archived"&&<button type="button" className="button buttonMini" disabled={busy} onClick={()=>archive(product)}>Arsipkan</button>}
+             </div></td>
+           </tr>)}</tbody>
+         </table></div> : <div className="adminDataEmpty"><h2>{products.length?"Produk tidak ditemukan":"Belum ada produk"}</h2><p>{products.length?"Coba kata kunci atau status lain.":"Klik Tambah produk untuk mulai menyiapkan katalog."}</p></div>
+         : orders.length ? <div className="adminTableWrap"><table className="adminTable">
+           <thead><tr><th scope="col">Pesanan</th><th scope="col">Pembeli</th><th scope="col">Nominal</th><th scope="col">Pembayaran</th><th scope="col">Pengiriman</th></tr></thead>
+           <tbody>{orders.map(order=><tr key={order.id}>
+             <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)} · {order.created_at?new Date(order.created_at).toLocaleString("id-ID"):"—"}</small></td>
+             <td>{order.buyer_email||"—"}</td><td>{rupiah(order.amount_idr)}</td>
+             <td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{{paid:"Lunas", pending:"Menunggu", creating:"Sedang dibuat", expired:"Kedaluwarsa", failed:"Gagal"}[order.status]||order.status}</span></td>
+             <td>{order.fulfillment_status==="sent"?"Sudah dikirim":order.status==="paid"&&order.fulfillment_status==="awaiting_email"?<div className="adminDelivery"><span>Menunggu pengiriman</span><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(order.id)}>Tandai sudah dikirim</button></div>:"—"}</td>
+           </tr>)}</tbody>
+         </table></div> : <div className="adminDataEmpty"><h2>Belum ada pesanan</h2><p>Pesanan akan muncul setelah pembeli memulai checkout. Setelah pembayaran lunas, kirim file ke email pembeli lalu tandai pengiriman selesai di sini.</p></div>}
+       </section>
+     </div>
+   </main>
+   {editing&&<AdminEditor product={editing.product} onClose={()=>{if(!busy)setEditing(null)}} onSave={handleSave} busy={busy}/>}
+ </div>;
 }

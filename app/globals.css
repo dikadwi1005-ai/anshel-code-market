@@ -66,3 +66,54 @@
   .marketFooterGrid{grid-template-columns:1fr 1fr;gap:23px 14px;padding:25px 0}
   .marketFooterBrand{grid-column:1/-1}
 }
+
+/* Admin workspace */
+.adminBody .adminArea{width:100%;max-width:none;padding:0}
+.adminWorkspace{min-height:100vh;display:grid;grid-template-columns:218px minmax(0,1fr);background:#f4f6fa}
+.adminSidebar{display:flex;flex-direction:column;gap:33px;padding:26px 16px;background:#16283e;color:#fff}
+.adminWordmark{font-size:21px;font-weight:800;letter-spacing:-.7px;padding-inline:8px}
+.adminWordmark span{color:#9ac9fe}
+.adminWordmark small{display:block;color:#c4d3e4;font-size:12px;font-weight:500;letter-spacing:0;margin-top:5px}
+.adminSidebar nav{display:grid;gap:5px}
+.adminSidebar nav button{display:flex;justify-content:space-between;gap:12px;text-align:left;align-items:center;width:100%;min-height:44px;padding:9px 12px;color:#e2eaf5;background:transparent;border:1px solid transparent;border-radius:7px;font:inherit;font-weight:650}
+.adminSidebar nav button:hover,.adminSidebar nav button[aria-current="page"]{background:#2a425e;border-color:#46607b;color:white}
+.adminSidebar nav button span{font-size:12px;color:#d6e4f2}
+.adminStoreLink{margin:auto 8px 0;color:#e2eaf5;font-size:13px}
+.adminContent{min-width:0}
+.adminTopbar{min-height:66px;padding:10px clamp(18px,4vw,42px);display:flex;align-items:center;justify-content:space-between;gap:14px;background:white;border-bottom:1px solid var(--line);color:#536479;font-size:13px}
+.adminIdentity{display:flex;gap:12px;align-items:center;min-width:0}
+.adminIdentity span{overflow-wrap:anywhere}
+.adminContentInner{max-width:1320px;margin:0 auto;padding:32px clamp(18px,4vw,42px) 60px}
+.adminSectionHead{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+.adminSectionHead h1{font-size:clamp(28px,4vw,36px);margin:0 0 5px;letter-spacing:-.04em}
+.adminSectionHead p,.adminDataEmpty p{margin:0;color:#536479;font-size:14px;line-height:1.55}
+.adminSummary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 24px}
+.adminSummary div,.adminDataPanel{background:#fff;border:1px solid #dce4ee;border-radius:10px}
+.adminSummary div{padding:16px}
+.adminSummary dt{font-size:13px;color:#536479}
+.adminSummary dd{font-size:29px;font-weight:750;margin:4px 0 0;font-variant-numeric:tabular-nums}
+.adminDataToolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:15px}
+.adminDataToolbar h2{margin:0;font-size:16px;margin-right:auto}
+.adminDataToolbar input{flex:1;min-width:150px}
+.adminDataToolbar .control{width:auto}
+.adminDataPanel .adminTableWrap{border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px}
+.adminDataPanel .adminTable td{font-size:13px;color:#344960}
+.adminDataPanel .adminTable td small,.adminDataPanel .adminTable th{color:#536479}
+.adminDataPanel .adminTable td strong{font-size:14px;color:#1d334c}
+.adminDataEmpty{text-align:center;padding:42px 18px;border-top:1px solid var(--line)}
+.adminDataEmpty h2{margin:0 0 7px;font-size:18px}
+.adminDataEmpty p{max-width:48ch;margin-inline:auto}
+.adminDelivery{display:grid;gap:5px;justify-items:start}
+@media(max-width:720px){
+ .adminWorkspace{grid-template-columns:minmax(0,1fr)}
+ .adminSidebar{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px;padding:12px}
+ .adminSidebar nav{display:flex;order:3;width:100%}
+ .adminSidebar nav button{flex:1}
+ .adminStoreLink{margin:0 0 0 auto}
+ .adminTopbar>span{display:none}
+ .adminIdentity{justify-content:space-between;width:100%}
+ .adminSectionHead{align-items:flex-start;flex-wrap:wrap}
+ .adminSummary{gap:6px}
+ .adminSummary div{padding:9px}
+ .adminSummary dt{font-size:11px}
+}
