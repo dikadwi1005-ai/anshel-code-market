@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState,type FormEvent} from "react";
 import AdminCustomers from "./admin-customers";
+import AdminSaleReadiness from "./admin-sale-readiness";
 import AdminOperations from "./admin-operations";
 import AdminOrderDetails from "./admin-order-details";
 import type {Auth} from "firebase/auth";
@@ -39,6 +40,7 @@ export default function AdminConsole(){
  const [filter,setFilter]=useState("");
  const [tab,setTab]=useState<"overview"|"products"|"orders"|"customers"|"settings"|"reports">("overview");
  const [orderFilter,setOrderFilter]=useState("");
+ const [saleProduct,setSaleProduct]=useState<Product|null>(null);
  const [orderDetail,setOrderDetail]=useState<string|null>(null);
  const [editing,setEditing]=useState<{product:Product|null}|null>(null);
  const [message,setMessage]=useState("");
@@ -168,12 +170,12 @@ export default function AdminConsole(){
            <button type="button" className="button" disabled={busy} onClick={refreshView}>Muat ulang</button>
          </div>
          {showingProducts ? rows.length ? <div className="adminTableWrap"><table className="adminTable">
-           <thead><tr><th scope="col">Produk</th><th scope="col">Harga</th><th scope="col">Status</th><th scope="col">File privat</th><th scope="col">Aksi</th></tr></thead>
+           <thead><tr><th scope="col">Produk</th><th scope="col">Harga</th><th scope="col">Status</th><th scope="col">Kesiapan jual</th><th scope="col">Aksi</th></tr></thead>
            <tbody>{rows.map(product=><tr key={product.id}>
              <td><strong>{product.name}</strong><small>{product.category} · {product.stack}</small></td>
              <td>{rupiah(product.price_idr)}</td>
              <td><span className={["preview","published"].includes(product.status)?"tag tagGreen":"tag tagGray"}>{{draft:"Draft", preview:"Pratinjau publik", published:"Terbit lama", archived:"Arsip"}[product.status]}</span></td>
-             <td>{assets.some(asset=>asset.product_id===product.id)?"Tercatat":"Belum tersedia"}</td>
+             <td><button type="button" className="button buttonMini" onClick={()=>setSaleProduct(product)}>File &amp; penjualan</button></td>
              <td><div className="adminButtons">
                <button type="button" className="button buttonMini" onClick={()=>setEditing({product})}>Edit</button>
                {["draft","preview"].includes(product.status)&&<button type="button" className="button buttonMini" disabled={busy} onClick={()=>toggle(product)}>{product.status==="preview"?"Sembunyikan":"Tampilkan di website"}</button>}
@@ -193,6 +195,7 @@ export default function AdminConsole(){
        </section>}
      </div>
    </main>
+   {saleProduct&&auth?.currentUser&&<AdminSaleReadiness user={auth.currentUser} product={saleProduct} close={()=>setSaleProduct(null)}/>}
    {orderDetail&&orders.some(order=>order.id===orderDetail)&&<AdminOrderDetails order={orders.find(order=>order.id===orderDetail)!} product={products.find(product=>product.id===orders.find(order=>order.id===orderDetail)?.product_id)?.name} close={()=>setOrderDetail(null)}/>}
    {editing&&<AdminEditor product={editing.product} onClose={()=>{if(!busy)setEditing(null)}} onSave={handleSave} busy={busy}/>}
  </div>;

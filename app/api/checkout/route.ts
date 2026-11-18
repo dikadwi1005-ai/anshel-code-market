@@ -28,7 +28,8 @@ export async function POST(request: Request) {
     const reserved = await db.runTransaction(async tx => {
       const [productSnap, offerSnap, markerSnap] = await tx.getAll(product, offer, marker);
       const item = productSnap.data();
-      if (!item || !["preview", "published"].includes(item.status) || offerSnap.get("active") !== true ||
+      if (!item || !["preview", "published"].includes(item.status) || offerSnap.get("active") !== true || !offerSnap.get("file_name") || !offerSnap.get("private_reference") ||
+          typeof item.license_summary !== "string" || !item.license_summary.trim() ||
           !Number.isSafeInteger(item.price_idr) || item.price_idr <= 0 || item.price_idr > 1000000000) return null;
       const now = Date.now();
       if ((markerSnap.get("retry_after") ?? 0) > now) return false;
@@ -81,7 +82,11 @@ export async function GET(request: Request) {
   if (settings && productId && /^[A-Za-z0-9_-]{1,128}$/.test(productId)) {
     try {
       const {db} = commerceServices();
-      available = (await db.collection("market_sale_offers").doc(productId).get()).get("active") === true;
+      const [product,offer] = await db.getAll(db.collection("market_products").doc(productId),db.collection("market_sale_offers").doc(productId));
+      const item=product.data();
+      available=!!item && ["preview","published"].includes(item.status) && Number.isSafeInteger(item.price_idr) &&
+        item.price_idr>0 && typeof item.license_summary==="string" && !!item.license_summary.trim() &&
+        offer.get("active")===true && Boolean(offer.get("file_name") && offer.get("private_reference"));
     } catch { /* A checkout without working server configuration stays hidden. */ }
   }
   return Response.json({available}, {headers: {"Cache-Control": "no-store"}});
