@@ -14,7 +14,9 @@ export async function POST(request: Request) {
   if (!productId || !/^[A-Za-z0-9_-]{1,128}$/.test(productId)) return new Response(null, {status: 400});
 
   try {
-    const {auth, db} = commerceServices();
+    const {app, db} = commerceServices();
+    const {getAuth} = await import("firebase-admin/auth");
+    const auth = getAuth(app);
     const buyer = await auth.verifyIdToken(token.slice(7), true).catch(() => null);
     if (!buyer?.email || !buyer.email_verified || !["google.com", "password"].includes(buyer.firebase.sign_in_provider)) {
       return Response.json({error: "Masuk dengan email yang sudah terverifikasi."}, {status: 401});

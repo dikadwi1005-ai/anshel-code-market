@@ -1,5 +1,4 @@
 import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
 export function commerceServices() {
@@ -11,7 +10,7 @@ export function commerceServices() {
     projectId: "anshelcode",
     credential: credentials ? cert(credentials) : applicationDefault(),
   }, name);
-  return { auth: getAuth(app), db: getFirestore(app) };
+  return { app, db: getFirestore(app) };
 }
 
 export function paymentSettings() {
