@@ -162,3 +162,11 @@
 @media(max-width:1050px){.adminOverview{grid-template-columns:minmax(0,1fr)}.adminOverviewRail{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.adminWorkspace{grid-template-columns:minmax(0,1fr)}.adminSidebar{position:static;height:auto;gap:6px;padding:12px}.adminWordmark{border:0;margin:0;padding:0 8px}.adminNavLabel{display:none}.adminSidebar nav{flex-wrap:nowrap;overflow:auto;gap:4px}.adminSidebar nav button{flex:none;min-width:0;padding-inline:10px}.adminOverviewMetrics div{padding:10px}.adminOverviewMetrics svg{display:none}.adminOverviewMetrics dt{padding:0}}
 @media(max-width:440px){.adminOverviewRail{grid-template-columns:minmax(0,1fr)}.adminOverviewMetrics small{display:block;line-height:1.2}}
+
+.adminReportBody{padding:16px;border-top:1px solid var(--line)}
+.adminReportBody>p{margin:0 0 15px;color:#52647a;font-size:13px}
+.adminReportBody dd{overflow-wrap:anywhere;font-size:clamp(16px,3vw,26px)}
+.adminReportBreakdown{display:flex;gap:8px;flex-wrap:wrap}
+.adminOrderDialog{width:min(620px,calc(100% - 28px));max-height:90dvh;overflow:auto;padding:0;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:#fff}
+.adminOrderDialog::backdrop{background:rgb(15 30 50 / .58)}
+.adminOrderLink{margin:0;padding:0;font-size:14px}

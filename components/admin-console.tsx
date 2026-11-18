@@ -1,6 +1,8 @@
 "use client";
 import {useEffect,useMemo,useState,type FormEvent} from "react";
 import AdminCustomers from "./admin-customers";
+import AdminOperations from "./admin-operations";
+import AdminOrderDetails from "./admin-order-details";
 import type {Auth} from "firebase/auth";
 import type {Firestore} from "firebase/firestore";
 import {authenticateAdmin,closeAdminSession,getAdminAuth,initializeMarket,loadMarketConfig,readAdminData,saveProduct,setProductStatus,type ProductInput} from "@/lib/firebase";
@@ -13,6 +15,7 @@ const icons = {
  products: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
  orders: "M6 4h12v16l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
  customers: "M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M12 7a3 3 0 11-6 0 3 3 0 016 0zM16 5a3 3 0 010 6M22 21v-2a4 4 0 00-3-4",
+ reports: "M4 20h16M7 16v-4M12 16V7M17 16V4",
  settings: "M4 6h16M4 12h16M4 18h16M8 4v4M16 10v4M10 16v4",
 } as const;
 const orderLabels: Record<string,string> = {paid:"Lunas",pending:"Menunggu",creating:"Sedang dibuat",expired:"Kedaluwarsa",failed:"Gagal"};
@@ -34,8 +37,9 @@ export default function AdminConsole(){
  const [busy,setBusy]=useState(false);
  const [search,setSearch]=useState("");
  const [filter,setFilter]=useState("");
- const [tab,setTab]=useState<"overview"|"products"|"orders"|"customers"|"settings">("overview");
+ const [tab,setTab]=useState<"overview"|"products"|"orders"|"customers"|"settings"|"reports">("overview");
  const [orderFilter,setOrderFilter]=useState("");
+ const [orderDetail,setOrderDetail]=useState<string|null>(null);
  const [editing,setEditing]=useState<{product:Product|null}|null>(null);
  const [message,setMessage]=useState("");
  const flash=(value:string)=>{setMessage(value)};
@@ -79,8 +83,8 @@ export default function AdminConsole(){
  const recentOrders=[...orders].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
  const drafts=products.filter(product=>product.status==="draft").length;
  const visibleOrders=orders.filter(order=>!orderFilter||(orderFilter==="delivery"?order.status==="paid"&&order.fulfillment_status==="awaiting_email":order.status===orderFilter));
- const sections={overview:"Ringkasan",products:"Produk",orders:"Pesanan",customers:"Pelanggan",settings:"Pengaturan"};
- const descriptions={overview:"Pantau kondisi katalog dan pesanan terbaru.",products:"Kelola produk, harga, dan visibilitas katalog.",orders:"Pantau pembayaran QRIS dan pengiriman file.",customers:"Lihat akun yang terdaftar melalui situs.",settings:"Lihat cara pembayaran, pengiriman, dan akses diatur."};
+ const sections={overview:"Ringkasan",products:"Produk",orders:"Pesanan",customers:"Pelanggan",reports:"Laporan",settings:"Pengaturan"};
+ const descriptions={overview:"Pantau kondisi katalog dan pesanan terbaru.",products:"Kelola produk, harga, dan visibilitas katalog.",orders:"Pantau pembayaran QRIS dan pengiriman file.",customers:"Lihat akun yang terdaftar melalui situs.",reports:"Tinjau penjualan dan pengiriman dari pesanan yang dimuat.",settings:"Lihat cara pembayaran, pengiriman, dan akses diatur."};
  const metrics=showingProducts
    ? [["Total produk", products.length], ["Tampil di katalog", publicCount], ["Draft", products.filter(product=>product.status==="draft").length]]
    : [["Pesanan dimuat", orders.length], ["Perlu dikirim", awaiting], ["File dikirim", sent]];
@@ -118,7 +122,7 @@ export default function AdminConsole(){
              {recentOrders.length ? <div className="adminTableWrap"><table className="adminTable adminRecentTable">
                <thead><tr><th scope="col">Produk</th><th scope="col">Nominal</th><th scope="col">Status</th></tr></thead>
                <tbody>{recentOrders.map(order=><tr key={order.id}>
-                 <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)}</small></td>
+                 <td><button type="button" className="adminActionLink adminOrderLink" onClick={()=>setOrderDetail(order.id)}>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</button><small>{order.id.slice(0,8)}</small></td>
                  <td>{rupiah(order.amount_idr)}</td><td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{orderLabels[order.status]||order.status}</span></td>
                </tr>)}</tbody>
              </table></div> : <div className="adminDataEmpty adminRecentEmpty"><div className="adminEmptyIcon"><AdminIcon name="orders"/></div><h3>Belum ada pesanan</h3><p>Pesanan pertama akan muncul di sini setelah pembeli memulai checkout.</p></div>}
@@ -138,14 +142,20 @@ export default function AdminConsole(){
          </div>
        </>}
        {tab==="customers"&&auth?.currentUser&&<AdminCustomers user={auth.currentUser}/>}
-       {tab==="settings"&&<section className="adminDataPanel">
-         <div className="adminDataToolbar"><h2>Konfigurasi operasional</h2></div>
-         <dl className="adminSettingsList">
-           <div><dt>Pembayaran</dt><dd>QRIS melalui SumoPod. Aktivasi checkout dikelola di konfigurasi server.</dd></div>
-           <div><dt>Pengiriman</dt><dd>Admin mengirim file secara manual melalui email, lalu memperbarui status di Pesanan.</dd></div>
-           <div><dt>Akun pembeli</dt><dd>Email dan kata sandi atau Google. Checkout mensyaratkan email terverifikasi.</dd></div>
-           <div><dt>Akses admin</dt><dd>{adminEmail}. Hak akses dikelola melalui Firebase.</dd></div>
-         </dl>
+       {tab==="settings"&&auth?.currentUser&&<AdminOperations user={auth.currentUser}/>}
+       {tab==="reports"&&<section className="adminDataPanel">
+         <div className="adminDataToolbar"><h2>Penjualan dan pengiriman</h2><button type="button" className="button" disabled={busy} onClick={refreshView}>Muat ulang</button></div>
+         <div className="adminReportBody">
+           <p>Cakupan: maksimal 50 pesanan terbaru. Angka lunas adalah nominal kotor, sebelum biaya SumoPod.</p>
+           <dl className="adminSummary">
+             <div><dt>Nominal lunas</dt><dd>{rupiah(orders.filter(order=>order.status==="paid").reduce((total,order)=>total+order.amount_idr,0))}</dd></div>
+             <div><dt>Pesanan lunas</dt><dd>{orders.filter(order=>order.status==="paid").length}</dd></div>
+             <div><dt>Pengiriman selesai</dt><dd>{sent}</dd></div>
+           </dl>
+           <div className="adminReportBreakdown">
+             {["pending","paid","failed","expired"].map(status=><button type="button" className="button" key={status} onClick={()=>{setOrderFilter(status);setTab("orders")}}>{orderLabels[status]} · {orders.filter(order=>order.status===status).length}</button>)}
+           </div>
+         </div>
        </section>}
        {(tab==="products"||tab==="orders")&&<section className="adminDataPanel" aria-label={showingProducts?"Daftar produk":"Daftar pesanan"}>
          <div className="adminDataToolbar">
@@ -183,6 +193,7 @@ export default function AdminConsole(){
        </section>}
      </div>
    </main>
+   {orderDetail&&orders.some(order=>order.id===orderDetail)&&<AdminOrderDetails order={orders.find(order=>order.id===orderDetail)!} product={products.find(product=>product.id===orders.find(order=>order.id===orderDetail)?.product_id)?.name} close={()=>setOrderDetail(null)}/>}
    {editing&&<AdminEditor product={editing.product} onClose={()=>{if(!busy)setEditing(null)}} onSave={handleSave} busy={busy}/>}
  </div>;
 }

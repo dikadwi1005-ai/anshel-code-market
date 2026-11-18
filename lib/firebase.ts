@@ -1,6 +1,6 @@
 "use client";
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getFirestore, onSnapshot, collection, doc, getDoc, getDocs, query, where, limit, addDoc, updateDoc, serverTimestamp, type Firestore, type QueryDocumentSnapshot, type DocumentData } from "firebase/firestore";
+import { getFirestore, onSnapshot, collection, doc, getDoc, getDocs, query, where, orderBy, limit, addDoc, updateDoc, serverTimestamp, type Firestore, type QueryDocumentSnapshot, type DocumentData } from "firebase/firestore";
 import { getAuth, initializeAuth, signInWithEmailAndPassword, signOut, inMemoryPersistence, type Auth } from "firebase/auth";
 import type { FirebaseWebConfig, MarketConfig, Product, Order } from "./types";
 
@@ -66,7 +66,7 @@ export async function authenticateAdmin(auth:Auth,db:Firestore,email:string,pass
 export async function readAdminData(db:Firestore):Promise<{products:Product[],orders:Order[],assets:{id:string,product_id:string}[]}> {
   const [products,orders,assets]=await Promise.all([
     getDocs(collection(db,"market_products")),
-    getDocs(query(collection(db,"market_orders"),limit(50))),
+    getDocs(query(collection(db,"market_orders"),orderBy("created_at","desc"),limit(50))),
     getDocs(collection(db,"market_assets")),
   ]);
   return {products:products.docs.map(row=>normalizeDocument<Product>(row)).sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))),
