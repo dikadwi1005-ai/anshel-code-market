@@ -27,7 +27,10 @@ export async function POST(request: Request) {
 
   let event;
   try { event = JSON.parse(raw.toString("utf8")); } catch { return new Response(null, {status: 400}); }
-  if (event?.event_type !== "payment.completed") return new Response(null, {status: 204});
+  const kind = event?.event_type;
+  if (kind !== "payment.completed" && kind !== "payment.failed" && kind !== "payment.expired") {
+    return new Response(null, {status: 204});
+  }
   const id = event?.data?.order_id;
   if (typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) return new Response(null, {status: 400});
 
@@ -38,10 +41,18 @@ export async function POST(request: Request) {
       const data = (await tx.get(order)).data();
       if (!data || data.payment_mode !== mode) return 409;
       if (data.status === "creating") return 503;
-      if (!matchesCompletedPayment(event, {orderId: id, paymentId: data.payment_id, amount: data.amount_idr})) return 409;
-      if (data.status === "paid") return 204;
-      if (data.status !== "pending") return 409;
-      tx.update(order, {status: "paid", paid_at: FieldValue.serverTimestamp(), fulfillment_status: "awaiting_email"});
+      if (typeof data.payment_id !== "string" || event.data.payment_id !== data.payment_id) return 409;
+
+      if (kind === "payment.completed") {
+        if (!matchesCompletedPayment(event, {orderId: id, paymentId: data.payment_id, amount: data.amount_idr})) return 409;
+        if (data.status === "paid") return 204;
+        if (!["pending", "failed", "expired"].includes(data.status)) return 409;
+        tx.update(order, {status: "paid", paid_at: FieldValue.serverTimestamp(), fulfillment_status: "awaiting_email"});
+      } else {
+        if (data.status !== "pending") return 204;
+        const status = kind === "payment.expired" ? "expired" : "failed";
+        tx.update(order, {status, updated_at: FieldValue.serverTimestamp()});
+      }
       return 204;
     });
     return new Response(null, {status: result});

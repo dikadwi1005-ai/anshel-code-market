@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import BuyerOrders from "./buyer-orders";
 import {useEffect, useState, type FormEvent} from "react";
 import {browserPopupRedirectResolver, browserSessionPersistence, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, reload, signInWithEmailAndPassword, GoogleAuthProvider, initializeAuth, onAuthStateChanged, signInWithPopup, signOut, type Auth, type User} from "firebase/auth";
 import {getApps, initializeApp} from "firebase/app";
@@ -141,6 +142,7 @@ export default function CustomerAccount({productId}: {productId?: string}) {
         <button type="button" className="button" disabled={busy} onClick={() => verifyEmail(false)}>Saya sudah verifikasi</button>
       </>}
       {productId && verified && <button type="button" className="button buttonPrimary" disabled={paying} onClick={pay}>{paying ? "Menyiapkan pembayaran…" : "Bayar dengan QRIS"}</button>}
+      {!productId && verified && <BuyerOrders key={user.uid} user={user} />}
       <button type="button" className="button" disabled={busy} onClick={changeSession}>Keluar</button>
     </div> : <>
       <form key={mode} className="buyerForm" onSubmit={submit}>
