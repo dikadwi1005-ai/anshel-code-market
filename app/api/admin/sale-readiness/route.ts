@@ -24,7 +24,7 @@ async function handle(request:Request, write:boolean) {
       const [item,entry]=await db.getAll(product,offer);
       if(!item.exists)return json({error:"Produk tidak ditemukan."},404);
       const value=entry.data();
-      return json({fileName:value?.file_name??"", reference:value?.private_reference??"", active:value?.active===true, checkoutEnabled:!!paymentSettings()});
+      return json({fileName:value?.file_name??"", reference:value?.private_reference??"", stored:typeof value?.blob_path==="string", active:value?.active===true, checkoutEnabled:!!paymentSettings()});
     }
 
     const reader=request.body?.getReader();
@@ -53,10 +53,11 @@ async function handle(request:Request, write:boolean) {
 
     const audit=db.collection("market_admin_audit").doc();
     const status=await db.runTransaction(async tx=>{
-      const [role,item]=await tx.getAll(admin,product);
+      const [role,item,existing]=await tx.getAll(admin,product,offer);
       if(!role.exists)return 403;
       const data=item.data();
       if(!data)return 404;
+      if(existing.get("blob_path") && (fileName!==existing.get("file_name") || reference!==existing.get("private_reference")))return 409;
       if(active&&(!fileName||!reference||input.confirmed!==true||
          !["preview","published"].includes(data.status)||!Number.isSafeInteger(data.price_idr)||data.price_idr<=0||
          typeof data.license_summary!=="string"||!data.license_summary.trim()))return 409;
