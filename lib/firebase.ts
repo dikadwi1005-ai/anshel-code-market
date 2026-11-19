@@ -63,14 +63,13 @@ export async function authenticateAdmin(auth:Auth,db:Firestore,email:string,pass
   }
   return credential.user.email||email;
 }
-export async function readAdminData(db:Firestore):Promise<{products:Product[],orders:Order[],assets:{id:string,product_id:string}[]}> {
-  const [products,orders,assets]=await Promise.all([
+export async function readAdminData(db:Firestore):Promise<{products:Product[],orders:Order[]}> {
+  const [products,orders]=await Promise.all([
     getDocs(collection(db,"market_products")),
     getDocs(query(collection(db,"market_orders"),orderBy("created_at","desc"),limit(50))),
-    getDocs(collection(db,"market_assets")),
   ]);
   return {products:products.docs.map(row=>normalizeDocument<Product>(row)).sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))),
-    orders:orders.docs.map(row=>normalizeDocument<Order>(row)),assets:assets.docs.map(row=>normalizeDocument<{id:string,product_id:string}>(row))};
+    orders:orders.docs.map(row=>normalizeDocument<Order>(row))};
 }
 export type ProductInput=Omit<Product,"id"|"created_at"|"updated_at">;
 export async function saveProduct(db:Firestore,form:ProductInput,id?:string){

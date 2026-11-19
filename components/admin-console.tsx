@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState,type FormEvent} from "react";
 import AdminCustomers from "./admin-customers";
 import AdminSaleReadiness from "./admin-sale-readiness";
 import AdminAnalytics from "./admin-analytics";
+import AdminFinance from "./admin-finance";
 import AdminOperations from "./admin-operations";
 import AdminOrderDetails from "./admin-order-details";
 import type {Auth} from "firebase/auth";
@@ -18,6 +19,7 @@ const icons = {
  orders: "M6 4h12v16l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
  customers: "M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M12 7a3 3 0 11-6 0 3 3 0 016 0zM16 5a3 3 0 010 6M22 21v-2a4 4 0 00-3-4",
  audit: "M6 3h12v18H6zM9 8h6M9 12h6M9 16h4",
+ finance: "M3 6h18v12H3zM7 12h1m8 0h1m-5-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
  reports: "M4 20h16M7 16v-4M12 16V7M17 16V4",
  settings: "M4 6h16M4 12h16M4 18h16M8 4v4M16 10v4M10 16v4",
 } as const;
@@ -26,6 +28,14 @@ function AdminIcon({name}: {name:keyof typeof icons}) {
  return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"><path d={icons[name]}/></svg>;
 }
 
+const sections={overview:"Ringkasan",products:"Produk",orders:"Pesanan",customers:"Pelanggan",reports:"Laporan",audit:"Audit",settings:"Pengaturan",finance:"Keuangan"} as const;
+const descriptions={products:"Kelola produk, harga, dan visibilitas katalog.",orders:"Pantau pembayaran QRIS dan pengiriman file.",customers:"Lihat akun yang terdaftar melalui situs.",reports:"Tinjau pembayaran dan pengiriman berdasarkan tanggal pesanan.",audit:"Lihat catatan perubahan yang disimpan oleh server.",settings:"Lihat cara pembayaran, pengiriman, dan akses diatur.",overview:"Pembayaran, pesanan terbaru, dan antrean pengiriman.",finance:"Nominal, biaya, dan neto per tanggal pembayaran."} as const;
+type Tab=keyof typeof sections;
+const tabPaths: Record<Tab,string>={overview:"ringkasan",products:"produk",orders:"pesanan",customers:"pelanggan",finance:"keuangan",reports:"laporan",audit:"audit",settings:"pengaturan"};
+const navGroups: {label:string;items:Tab[]}[]=[
+ {label:"Toko",items:["overview","orders","products","customers"]},
+ {label:"Pengelolaan",items:["finance","reports","audit","settings"]},
+];
 type Mode="connecting"|"setup"|"login"|"ready";
 export default function AdminConsole(){
  const [mode,setMode]=useState<Mode>("connecting");
@@ -36,11 +46,23 @@ export default function AdminConsole(){
  const [adminEmail,setAdminEmail]=useState("");
  const [products,setProducts]=useState<Product[]>([]);
  const [orders,setOrders]=useState<Order[]>([]);
- const [assets,setAssets]=useState<{id:string,product_id:string}[]>([]);
+ const [catalogState,setCatalogState]=useState<"loading"|"ready"|"error">("loading");
  const [busy,setBusy]=useState(false);
  const [search,setSearch]=useState("");
  const [filter,setFilter]=useState("");
- const [tab,setTab]=useState<"overview"|"products"|"orders"|"customers"|"settings"|"reports"|"audit">("overview");
+ const [tab,setTab]=useState<Tab>("overview");
+ const go=(next:Tab)=>{window.location.hash=tabPaths[next];setTab(next)};
+ useEffect(()=>{
+  function sync(){
+   if(window.location.hash==="#admin-main")return;
+   const target=window.location.hash.slice(1);
+   const key=(Object.keys(tabPaths) as Tab[]).find(item=>tabPaths[item]===target);
+   setTab(key??"overview");
+  }
+  sync();
+  window.addEventListener("hashchange",sync);
+  return ()=>window.removeEventListener("hashchange",sync);
+ },[]);
  const [orderFilter,setOrderFilter]=useState("");
  const [saleProduct,setSaleProduct]=useState<Product|null>(null);
  const [orderDetail,setOrderDetail]=useState<string|null>(null);
@@ -74,12 +96,19 @@ export default function AdminConsole(){
    await refresh(db);flash("Pengiriman ditandai selesai.");
   }catch(error){flash(errorMessage(error))}finally{setBusy(false)}
  };
- const refresh=async(database:Firestore)=>{const data=await readAdminData(database);setProducts(data.products);setOrders(data.orders);setAssets(data.assets)};
+ const refresh=async(database:Firestore)=>{
+  const session=auth?.currentUser;
+  try{
+   const data=await readAdminData(database);
+   if(auth?.currentUser!==session)return;
+   setProducts(data.products);setOrders(data.orders);setCatalogState("ready");
+  }catch(error){if(auth?.currentUser===session)setCatalogState("error");throw error}
+ };
  const login=async(event:FormEvent)=>{event.preventDefault();if(!db||!auth||busy)return;setBusy(true);flash("");
-  try{const user=await authenticateAdmin(auth,db,email.trim(),password);setPassword("");await refresh(db);setAdminEmail(user);setMode("ready");flash("")}
+  try{const user=await authenticateAdmin(auth,db,email.trim(),password);setPassword("");setAdminEmail(user);setMode("ready");await refresh(db);flash("")}
   catch(error){setPassword("");flash(errorMessage(error))}finally{setBusy(false)}
  };
- const logout=async()=>{if(auth)await closeAdminSession(auth).catch(()=>{});setProducts([]);setOrders([]);setAssets([]);setAdminEmail("");setPassword("");setMode("login");flash("Sesi admin ditutup.")};
+ const logout=async()=>{if(auth)await closeAdminSession(auth).catch(()=>{});setProducts([]);setOrders([]);setCatalogState("loading");setAdminEmail("");setPassword("");setMode("login");flash("Sesi admin ditutup.")};
  const handleSave=async(form:ProductInput)=>{if(!db)return;setBusy(true);try{await saveProduct(db,form,editing?.product?.id);await refresh(db);setEditing(null);flash("Data produk tersimpan ke Firestore.")}
   catch(error){flash(errorMessage(error));throw error}finally{setBusy(false)}};
  const toggle=async(p:Product)=>{if(!db||busy)return;setBusy(true);try{await setProductStatus(db,p.id,p.status==="preview"?"draft":"preview");await refresh(db);flash(p.status==="preview"?"Produk disembunyikan.":"Pratinjau produk ditampilkan di website. Pembelian tetap nonaktif.")}
@@ -89,7 +118,7 @@ export default function AdminConsole(){
  const rows=useMemo(()=>products.filter(p=>(!filter||p.status===filter)&&[p.name,p.slug,p.stack,p.category].join(" ").toLocaleLowerCase("id").includes(search.toLocaleLowerCase("id"))),[products,filter,search]);
  if(mode==="connecting")return <div className="loading">Memeriksa konfigurasi Firebase…</div>;
  if(mode==="setup")return <section className="adminSignIn"><div className="adminLoginLogo">ANSHEL MARKET · FIREBASE</div><h1>Database belum terhubung.</h1><p>Dashboard Next.js siap, tetapi konfigurasi Firebase belum dapat dibaca. Periksa environment variables di Vercel dan pastikan proyek `anshelcode` digunakan.</p>{message&&<div className="adminToast" role="alert">{message}</div>}<button className="button" type="button" onClick={()=>location.reload()}>Periksa ulang</button></section>;
- if(mode==="login")return <section className="adminSignIn"><div className="adminLoginLogo">ANSHEL MARKET · ADMINISTRATION</div><h1>Masuk ke Dashboard</h1><p>Gunakan akun Firebase Authentication yang sudah diberikan hak admin. Formulir ini tidak menyediakan pendaftaran publik.</p><form onSubmit={login}><label className="field"><span className="fieldLabel">Email admin</span><input className="control" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label className="field"><span className="fieldLabel">Kata sandi</span><input className="control" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button type="submit" disabled={busy} className="button buttonPrimary">{busy?"Memeriksa…":"Masuk"}</button></form>{message&&<div className="adminToast" role="status">{message}</div>}<p>Sesi tersimpan sementara di memori dan tidak menjadi akses publik.</p></section>;
+ if(mode==="login")return <section className="adminSignIn"><div className="adminLoginLogo">Anshel Code Market</div><h1>Masuk ke admin</h1><p>Gunakan email dan kata sandi administrator.</p><form onSubmit={login}><label className="field"><span className="fieldLabel">Email admin</span><input className="control" type="email" name="email" spellCheck={false} autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label className="field"><span className="fieldLabel">Kata sandi</span><input className="control" type="password" name="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button type="submit" disabled={busy} className="button buttonPrimary">{busy?"Memeriksa…":"Masuk"}</button></form>{message&&<div className="adminToast" role="status">{message}</div>}</section>;
  const publicCount=products.filter(product=>["preview","published"].includes(product.status)).length;
  const awaiting=orders.filter(order=>order.status==="paid" && order.fulfillment_status==="awaiting_email").length;
  const sent=orders.filter(order=>order.fulfillment_status==="sent").length;
@@ -98,20 +127,24 @@ export default function AdminConsole(){
  const recentOrders=[...orders].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
  const drafts=products.filter(product=>product.status==="draft").length;
  const visibleOrders=orders.filter(order=>!orderFilter||(orderFilter==="delivery"?order.status==="paid"&&order.fulfillment_status==="awaiting_email":order.status===orderFilter));
- const sections={overview:"Ringkasan",products:"Produk",orders:"Pesanan",customers:"Pelanggan",reports:"Laporan",audit:"Audit",settings:"Pengaturan"};
- const descriptions={overview:"Pantau kondisi katalog dan pesanan terbaru.",products:"Kelola produk, harga, dan visibilitas katalog.",orders:"Pantau pembayaran QRIS dan pengiriman file.",customers:"Lihat akun yang terdaftar melalui situs.",reports:"Tinjau pembayaran dan pengiriman berdasarkan tanggal pesanan.",audit:"Lihat catatan perubahan yang disimpan oleh server.",settings:"Lihat cara pembayaran, pengiriman, dan akses diatur."};
  const metrics=showingProducts
    ? [["Total produk", products.length], ["Tampil di katalog", publicCount], ["Draft", products.filter(product=>product.status==="draft").length]]
    : [["Pesanan dimuat", orders.length], ["Perlu dikirim", awaiting], ["File dikirim", sent]];
  return <div className="adminWorkspace">
+   <a className="adminSkip" href="#admin-main">Lewati ke konten</a>
    <aside className="adminSidebar">
-     <div className="adminWordmark">anshel<span>.</span>market<small>Admin</small></div>
-     <span className="adminNavLabel">Operasional</span>
+     <div className="adminWordmark"><span className="adminBrandMark" aria-hidden="true">&lt;/&gt;</span><div>Anshel<small>Code Market</small></div></div>
      <nav aria-label="Navigasi admin">
-       {(Object.keys(sections) as Array<keyof typeof sections>).map(key=><button key={key} type="button" aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}><span className="adminNavItem"><AdminIcon name={key}/>{sections[key]}</span>{key==="orders"&&awaiting>0&&<span className="adminNavBadge">{awaiting}</span>}</button>)}
+       {navGroups.map(group=><div className="adminNavGroup" key={group.label}>
+         <span className="adminNavLabel">{group.label}</span>
+         {group.items.map(key=><a key={key} href={"#"+tabPaths[key]} aria-current={tab===key?"page":undefined}>
+           <span className="adminNavItem"><AdminIcon name={key}/>{sections[key]}</span>
+           {key==="orders"&&awaiting>0&&<span className="adminNavBadge" aria-label={awaiting+" perlu dikirim"}>{awaiting}</span>}
+         </a>)}
+       </div>)}
      </nav>
    </aside>
-   <main className="adminContent">
+   <main id="admin-main" className="adminContent" tabIndex={-1}>
      <header className="adminTopbar">
        <span>Admin / {sections[tab]}</span>
        <div className="adminIdentity"><div className="adminProfile"><span className="adminAvatar" aria-hidden="true">{adminEmail.slice(0,2).toUpperCase()}</span><span><strong>Administrator</strong><small>{adminEmail}</small></span></div><button type="button" className="button" onClick={logout}>Keluar</button></div>
@@ -121,19 +154,20 @@ export default function AdminConsole(){
          <div><h1>{sections[tab]}</h1><p>{descriptions[tab]}</p></div>
          {showingProducts&&<button type="button" className="button buttonPrimary" onClick={()=>setEditing({product:null})}>Tambah produk</button>}
        </header>
-       {(tab==="products"||tab==="orders")&&<dl className="adminSummary">
+       {catalogState==="ready"&&(tab==="products"||tab==="orders")&&<dl className="adminSummary">
          {metrics.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
        </dl>}
        {message&&<p className="adminToast" role="status">{message}</p>}
-       {tab==="overview"&&<>
-         <dl className="adminSummary adminOverviewMetrics">
-           <div><AdminIcon name="products"/><dt>Produk publik</dt><dd>{publicCount}</dd><small>{products.length} produk tercatat</small></div>
-           <div><AdminIcon name="orders"/><dt>Pesanan terbaru</dt><dd>{orders.length}</dd><small>Dari daftar yang dimuat</small></div>
-           <div><AdminIcon name="customers"/><dt>Siap dikirim</dt><dd>{awaiting}</dd><small>Pesanan lunas yang menunggu file</small></div>
-         </dl>
+       {tab==="overview"&&auth?.currentUser&&<AdminFinance user={auth.currentUser} compact open={()=>go("finance")}/>}
+       {tab==="finance"&&auth?.currentUser&&<AdminFinance user={auth.currentUser}/>}
+       {(["overview","orders","products"] as Tab[]).includes(tab)&&catalogState!=="ready"&&
+         <div className="adminToast" role="status">{catalogState==="loading"?"Memuat katalog dan pesanan…":"Katalog dan pesanan belum dapat dimuat."}
+           {catalogState==="error"&&<button type="button" className="button" disabled={busy} onClick={refreshView}>Coba lagi</button>}
+         </div>}
+       {tab==="overview"&&catalogState==="ready"&&<>
          <div className="adminOverview">
            <section className="adminDataPanel">
-             <div className="adminDataToolbar adminOverviewToolbar"><div><h2>Pesanan terbaru</h2><p>Pembayaran dan pengiriman</p></div><button type="button" className="button" onClick={()=>{setOrderFilter("");setTab("orders")}}>Lihat pesanan</button></div>
+             <div className="adminDataToolbar adminOverviewToolbar"><div><h2>Pesanan terbaru</h2><p>Pembayaran dan pengiriman</p></div><button type="button" className="button" onClick={()=>{setOrderFilter("");go("orders")}}>Lihat pesanan</button></div>
              {recentOrders.length ? <div className="adminTableWrap"><table className="adminTable adminRecentTable">
                <thead><tr><th scope="col">Produk</th><th scope="col">Nominal</th><th scope="col">Status</th></tr></thead>
                <tbody>{recentOrders.map(order=><tr key={order.id}>
@@ -146,12 +180,12 @@ export default function AdminConsole(){
              <section className="adminDataPanel adminRailPanel">
                <h2>Antrean pengiriman</h2>
                <p>{awaiting?awaiting+" pesanan sudah lunas dan menunggu file.":"Tidak ada pesanan yang menunggu file."}</p>
-               <button className="adminActionLink" type="button" onClick={()=>{setOrderFilter("delivery");setTab("orders")}}>Buka antrean <span aria-hidden="true">→</span></button>
+               <button className="adminActionLink" type="button" onClick={()=>{setOrderFilter("delivery");go("orders")}}>Buka antrean <span aria-hidden="true">→</span></button>
              </section>
              <section className="adminDataPanel adminRailPanel">
                <h2>Kondisi katalog</h2>
                <dl className="adminCatalogSplit"><div><dt>Publik</dt><dd>{publicCount}</dd></div><div><dt>Draft</dt><dd>{drafts}</dd></div><div><dt>Arsip</dt><dd>{products.filter(product=>product.status==="archived").length}</dd></div></dl>
-               <button className="adminActionLink" type="button" onClick={()=>{setFilter("draft");setTab("products")}}>Tinjau draft <span aria-hidden="true">→</span></button>
+               <button className="adminActionLink" type="button" onClick={()=>{setFilter("draft");go("products")}}>Tinjau draft <span aria-hidden="true">→</span></button>
              </section>
            </div>
          </div>
@@ -159,14 +193,14 @@ export default function AdminConsole(){
        {tab==="customers"&&auth?.currentUser&&<AdminCustomers user={auth.currentUser}/>}
        {tab==="settings"&&auth?.currentUser&&<AdminOperations user={auth.currentUser}/>}
        {(tab==="reports"||tab==="audit")&&auth?.currentUser&&<AdminAnalytics key={tab} user={auth.currentUser} mode={tab}/>}
-       {(tab==="products"||tab==="orders")&&<section className="adminDataPanel" aria-label={showingProducts?"Daftar produk":"Daftar pesanan"}>
+       {catalogState==="ready"&&(tab==="products"||tab==="orders")&&<section className="adminDataPanel" aria-label={showingProducts?"Daftar produk":"Daftar pesanan"}>
          <div className="adminDataToolbar">
            {showingProducts ? <>
              <input className="control" type="search" aria-label="Cari produk" placeholder="Cari produk…" value={search} onChange={e=>setSearch(e.target.value)}/>
              <select className="control" value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Status produk">
                <option value="">Semua status</option><option value="draft">Draft</option><option value="preview">Pratinjau publik</option><option value="published">Terbit lama</option><option value="archived">Arsip</option>
              </select>
-           </> : <><h2>Daftar pesanan</h2><select className="control" aria-label="Status pesanan" value={orderFilter} onChange={event=>setOrderFilter(event.target.value)}><option value="">Semua pesanan</option><option value="pending">Menunggu pembayaran</option><option value="paid">Lunas</option><option value="delivery">Perlu dikirim</option><option value="failed">Gagal</option><option value="expired">Kedaluwarsa</option></select></>}
+           </> : <><h2>50 pesanan terbaru</h2><select className="control" aria-label="Status pesanan" value={orderFilter} onChange={event=>setOrderFilter(event.target.value)}><option value="">Semua pesanan</option><option value="pending">Menunggu pembayaran</option><option value="paid">Lunas</option><option value="delivery">Perlu dikirim</option><option value="failed">Gagal</option><option value="expired">Kedaluwarsa</option></select></>}
            <button type="button" className="button" disabled={busy} onClick={refreshView}>Muat ulang</button>
          </div>
          {showingProducts ? rows.length ? <div className="adminTableWrap"><table className="adminTable">
@@ -186,7 +220,7 @@ export default function AdminConsole(){
          : visibleOrders.length ? <div className="adminTableWrap"><table className="adminTable">
            <thead><tr><th scope="col">Pesanan</th><th scope="col">Pembeli</th><th scope="col">Nominal</th><th scope="col">Pembayaran</th><th scope="col">Pengiriman</th></tr></thead>
            <tbody>{visibleOrders.map(order=><tr key={order.id}>
-             <td><strong>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</strong><small>{order.id.slice(0,8)} · {order.created_at?new Date(order.created_at).toLocaleString("id-ID"):"—"}</small></td>
+             <td><button type="button" className="adminActionLink adminOrderLink" onClick={()=>setOrderDetail(order.id)}>{products.find(product=>product.id===order.product_id)?.name||"Produk"}</button><small>{order.id.slice(0,8)} · {order.created_at?new Date(order.created_at).toLocaleString("id-ID"):"—"}</small></td>
              <td>{order.buyer_email||"—"}</td><td>{rupiah(order.amount_idr)}</td>
              <td><span className={order.status==="paid"?"tag tagGreen":"tag tagGray"}>{orderLabels[order.status]||order.status}</span></td>
              <td>{order.fulfillment_status==="sent"?"Sudah dikirim":order.status==="paid"&&order.fulfillment_status==="awaiting_email"?<div className="adminDelivery"><span>Menunggu pengiriman</span><button className="button buttonMini" type="button" disabled={busy} onClick={()=>retryEmail(order.id)}>Kirim ulang email</button><button className="button buttonMini" type="button" disabled={busy} onClick={()=>finishDelivery(order.id)}>Tandai sudah dikirim</button></div>:"—"}</td>

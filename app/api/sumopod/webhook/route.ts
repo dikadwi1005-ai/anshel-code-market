@@ -1,6 +1,7 @@
 import {after} from "next/server";
 import {deliveryEnabled, sendOrderEmail} from "@/lib/server/order-email";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { providerPaidTime, validProviderAmounts } from "@/lib/finance";
 import { commerceServices } from "@/lib/server/commerce";
 import { matchesCompletedPayment, verifySumopodSignature } from "@/lib/server/sumopod-verification";
 
@@ -44,20 +45,36 @@ export async function POST(request: Request) {
       if (!data || data.payment_mode !== mode) return 409;
       const paymentId = event.data.payment_id;
       if (typeof paymentId !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(paymentId)) return 409;
+      const providerAmounts = validProviderAmounts(event.data, data.amount_idr);
+      const reportedPaidTime = providerPaidTime(event.data.paid_at);
+      const recordedAmounts = providerAmounts
+        ? { provider_fee_idr: providerAmounts.fee, provider_net_idr: providerAmounts.net }
+        : {};
+      const paidFields = {
+        status: "paid",
+        paid_at: reportedPaidTime === null ? FieldValue.serverTimestamp() : Timestamp.fromMillis(reportedPaidTime),
+        fulfillment_status: "awaiting_email",
+        ...recordedAmounts,
+      };
       if (data.status === "creating") {
         if (kind !== "payment.completed") return 503;
         // A verified completion can recover a payment whose creation response was lost.
         if (!matchesCompletedPayment(event, {orderId: id, paymentId, amount: data.amount_idr})) return 409;
-        tx.update(order, {payment_id: paymentId, status: "paid", paid_at: FieldValue.serverTimestamp(), fulfillment_status: "awaiting_email"});
+        tx.update(order, {payment_id: paymentId, ...paidFields});
         return 204;
       }
       if (paymentId !== data.payment_id) return 409;
 
       if (kind === "payment.completed") {
         if (!matchesCompletedPayment(event, {orderId: id, paymentId: data.payment_id, amount: data.amount_idr})) return 409;
-        if (data.status === "paid") return 204;
+        if (data.status === "paid") {
+          if (providerAmounts && !validProviderAmounts({fee: data.provider_fee_idr, net_amount: data.provider_net_idr}, data.amount_idr)) {
+            tx.update(order, recordedAmounts);
+          }
+          return 204;
+        }
         if (!["pending", "failed", "expired"].includes(data.status)) return 409;
-        tx.update(order, {status: "paid", paid_at: FieldValue.serverTimestamp(), fulfillment_status: "awaiting_email"});
+        tx.update(order, paidFields);
       } else {
         if (data.status !== "pending") return 204;
         const status = kind === "payment.expired" ? "expired" : "failed";

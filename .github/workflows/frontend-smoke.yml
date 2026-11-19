@@ -44,6 +44,7 @@ jobs:
           npm run typecheck
           node tests/public-products.cjs
           node tests/order-email.cjs
+          node tests/admin-finance.cjs
       - name: Build Next.js
         run: npm run build
       - name: Install browser test tooling

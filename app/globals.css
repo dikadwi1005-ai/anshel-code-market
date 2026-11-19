@@ -174,3 +174,344 @@
 .adminSaleCheck{display:flex!important;align-items:start;gap:8px}.adminSaleCheck input{margin-top:4px}
 
 .adminAnalyticsFilters{align-items:end}.adminAnalyticsFilters label{display:grid;gap:5px;font-size:13px;color:#344960}
+
+/* Private admin workspace */
+.adminBody {
+  --admin-bg: #f4f3f9;
+  --admin-ink: #222038;
+  --admin-muted: #56536b;
+  --admin-line: #dfddea;
+  --admin-accent: #53409b;
+  --admin-soft: #eeebf9;
+  background: var(--admin-bg);
+  color: var(--admin-ink);
+}
+
+.adminBody .adminWorkspace {
+  grid-template-columns: 226px minmax(0, 1fr);
+  background: var(--admin-bg);
+}
+.adminBody .adminSidebar {
+  background: #211d35;
+  gap: 18px;
+  padding: 27px 14px 18px;
+  overflow-y: auto;
+}
+.adminBody .adminWordmark {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  margin: 0 0 3px;
+  padding: 4px 7px 24px;
+  border-bottom-color: #423b58;
+  line-height: 1.05;
+}
+.adminWordmark small {
+  color: #cbc3dd;
+  margin-top: 4px;
+}
+.adminWordmark .adminBrandMark {
+  flex: 0 0 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #dcd2f6;
+  color: #3a2964;
+  font: 700 12px ui-monospace, monospace;
+}
+.adminBody .adminSidebar nav {
+  gap: 17px;
+}
+.adminNavGroup {
+  display: grid;
+  gap: 3px;
+}
+.adminBody .adminNavLabel {
+  color: #cec6dd;
+  padding: 0 10px 3px;
+}
+.adminSidebar nav a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  min-height: 43px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #ded8ed;
+  font-weight: 620;
+}
+.adminSidebar nav a:hover,
+.adminSidebar nav a[aria-current="page"] {
+  color: #fff;
+  background: #403555;
+}
+.adminSidebar nav a[aria-current="page"] {
+  box-shadow: inset 3px 0 #c3a9f8;
+}
+.adminSidebar nav a svg {
+  flex: 0 0 18px;
+}
+.adminBody .adminSidebar .adminNavBadge {
+  background: #655183;
+  color: #fff;
+}
+.adminBody .adminTopbar {
+  border-color: var(--admin-line);
+  color: var(--admin-muted);
+  min-height: 59px;
+}
+.adminBody .adminAvatar {
+  background: var(--admin-soft);
+  color: var(--admin-accent);
+}
+.adminBody .adminContentInner {
+  padding-top: 34px;
+}
+.adminBody .adminSectionHead h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: -.05em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.adminBody .adminSectionHead p,
+.adminBody .adminDataEmpty p {
+  color: var(--admin-muted);
+}
+.adminBody .adminDataPanel,
+.adminBody .adminSummary div {
+  border-color: var(--admin-line);
+  border-radius: 8px;
+}
+.adminBody .adminActionLink {
+  color: var(--admin-accent);
+}
+.adminBody .button {
+  color: var(--admin-accent);
+  border-color: #d4cee6;
+}
+.adminBody .button:hover {
+  background: var(--admin-soft);
+}
+.adminBody .buttonPrimary {
+  background: var(--admin-accent);
+  color: #fff;
+  border-color: var(--admin-accent);
+}
+.adminBody .buttonPrimary:hover {
+  background: #422f85;
+}
+.adminBody :focus-visible {
+  outline: 3px solid #9877df;
+  outline-offset: 2px;
+}
+.adminSkip {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  z-index: 10;
+  transform: translateY(-160%);
+  padding: 8px 13px;
+  background: #fff;
+  color: var(--admin-ink);
+}
+.adminSkip:focus {
+  transform: none;
+}
+.financeWorkspace,
+.financeCompact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 15px;
+}
+.financeCompact {
+  margin-bottom: 18px;
+}
+.financeToolbar,
+.financeRange {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px clamp(13px, 2vw, 22px);
+}
+.financeToolbar h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.financeToolbar p {
+  margin: 3px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+.financeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.financeField {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.financeField .control {
+  font-size: 13px;
+  border-color: #d4cee6;
+}
+.financeRange {
+  align-items: end;
+  justify-content: flex-start;
+  border-top: 1px solid var(--admin-line);
+}
+.financeMetrics {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  margin: 0;
+  border-block: 1px solid var(--admin-line);
+  background: #fbfaff;
+}
+.financeMetrics div {
+  min-width: 0;
+  padding: 15px clamp(12px, 2vw, 22px);
+}
+.financeMetrics div + div {
+  border-left: 1px solid var(--admin-line);
+}
+.financeMetrics dt,
+.financeMetrics small {
+  color: var(--admin-muted);
+}
+.financeMetrics dd {
+  margin: 3px 0;
+  color: var(--admin-ink);
+  font-size: clamp(18px, 2.35vw, 30px);
+  line-height: 1.2;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.financeNotice,
+.financeFootnote {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+.financeNotice,
+.financeCompact .financeFootnote {
+  padding: 13px clamp(13px, 2vw, 22px);
+}
+.financeNotice button {
+  margin-inline-start: 8px;
+}
+.financeChart {
+  padding: 14px clamp(13px, 2vw, 22px);
+}
+.financeChart svg {
+  width: 100%;
+  display: block;
+  min-height: 110px;
+  max-height: 270px;
+}
+.financeChart line {
+  stroke: var(--admin-line);
+}
+.financeChart rect {
+  fill: #7254b1;
+}
+.financeChart text {
+  fill: var(--admin-muted);
+  font: 12px system-ui, sans-serif;
+}
+.financeChart summary {
+  width: fit-content;
+  color: var(--admin-accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+.adminDataPanel .adminTable.financeTransactions {
+  min-width: 580px;
+  font-variant-numeric: tabular-nums;
+}
+.adminDataPanel .adminTable.financeDaily {
+  min-width: 260px;
+}
+.financeReference {
+  display: block;
+  overflow-wrap: anywhere;
+  max-width: 35ch;
+}
+.adminBody .adminToast .button {
+  margin-inline-start: 8px;
+}
+@media (max-width: 810px) {
+  .adminBody .adminWorkspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .adminBody .adminSidebar {
+    position: static;
+    height: auto;
+    padding: 12px;
+    gap: 10px;
+  }
+  .adminBody .adminWordmark {
+    border: 0;
+    padding: 1px 5px 3px;
+  }
+  .adminBody .adminSidebar nav {
+    display: grid;
+    width: 100%;
+    gap: 6px;
+    overflow: visible;
+  }
+  .adminNavGroup {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .adminBody .adminNavLabel {
+    display: none;
+  }
+  .adminBody .adminSidebar nav .adminNavItem {
+    gap: 3px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+  .adminSidebar nav a {
+    padding-inline: 4px;
+    gap: 2px;
+    min-height: 44px;
+  }
+  .adminSidebar nav a svg {
+    width: 15px;
+    flex-basis: 15px;
+  }
+  .adminBody .adminSidebar .adminNavBadge {
+    padding-inline: 4px;
+  }
+  .adminBody .adminContentInner {
+    padding-top: 25px;
+  }
+}
+@media (max-width: 480px) {
+  .financeMetrics {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .financeMetrics div:first-child {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--admin-line);
+  }
+  .financeMetrics div:nth-child(2) {
+    border-left: 0;
+  }
+  .financeChart text {
+    font-size: 17px;
+  }
+}
