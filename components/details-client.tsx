@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 import {useSearchParams} from "next/navigation";
 import Link from "next/link";
-import PreviewImage from "./preview-image";
+import ProductGallery from "./product-gallery";
 import ProductCard from "./product-card";
 import {usePublicProducts} from "@/lib/use-public-products";
 import {rupiah} from "@/lib/utils";
@@ -34,7 +34,7 @@ export default function DetailsClient(){
  if(!item)return <div className="emptyState"><h3>Produk tidak ditemukan.</h3><p>{error||"Produk ini mungkin belum diterbitkan sebagai pratinjau atau sudah diarsipkan."}</p><Link className="button" href="/">Kembali ke katalog</Link></div>;
  const related=list.filter(p=>p.id!==item.id).slice(0,3);
  return <><nav className="breadcrumbs"><Link href="/">Katalog</Link><span>/</span><span>{item.category}</span><span>/</span><span>{item.name}</span></nav>
-  <div className="detailLayout"><div className="detailPreview"><PreviewImage src={item.preview_path} name={item.name} large/><div className="detailMeta">Pratinjau produk</div></div>
+  <div className="detailLayout"><ProductGallery key={item.id} cover={item.preview_path} name={item.name}/>
   <section className="detailDescription"><span className="tag">Pratinjau publik</span><p className="eyebrow">{item.category} · Source code</p><h1>{item.name}</h1><p>{item.description}</p><div className="detailMeta"><b>Teknologi</b> · {item.stack}</div><p style={{fontSize:11,marginTop:18,marginBottom:0}}>Harga</p><div className="detailPrice">{rupiah(item.price_idr)}</div>{availableId===item.id?<Link className="button buttonPrimary" href={"/checkout?id="+encodeURIComponent(item.id)}>Beli dengan QRIS</Link>:<div className="noticeAmber">Produk belum tersedia untuk dibeli.</div>}<div className="detailActions"><button className="button" type="button" aria-pressed={saved} onClick={toggle}>{saved?"♥ Tersimpan":"♡ Simpan produk"}</button><Link className="button" href="/">Kembali ke katalog</Link></div></section></div>
   <div className="detailFeatures"><h2>Fitur dan informasi</h2><ul>{item.features.map((f,i)=><li key={i}>{f}</li>)}</ul><div className="detailMeta">Lisensi: {item.license_summary||"Belum ditetapkan"}</div></div>
   {related.length>0&&<section style={{marginTop:35}}><h2 style={{fontSize:21}}>Produk lainnya</h2><div className="relatedGrid">{related.map(p=><ProductCard key={p.id} product={p} saved={false}/>)}</div></section>}
