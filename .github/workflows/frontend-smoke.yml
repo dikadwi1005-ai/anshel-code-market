@@ -11,6 +11,7 @@ on:
       - 'package-lock.json'
       - 'next.config.ts'
       - 'tests/**'
+      - 'scripts/**'
       - '.github/workflows/frontend-smoke.yml'
   pull_request:
     paths:
@@ -21,6 +22,7 @@ on:
       - 'package.json'
       - 'next.config.ts'
       - 'tests/**'
+      - 'scripts/**'
       - '.github/workflows/frontend-smoke.yml'
 permissions:
   contents: read
@@ -36,15 +38,16 @@ jobs:
       - name: Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: TypeScript and catalog regression checks
         run: |
           npm run typecheck
           node tests/public-products.cjs
           node tests/order-email.cjs
           node tests/admin-finance.cjs
+          node --no-experimental-require-module -e "require('firebase-admin/auth')"
       - name: Build Next.js
         run: npm run build
       - name: Install browser test tooling

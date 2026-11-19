@@ -1,4 +1,3 @@
-import { getAuth } from "firebase-admin/auth";
 import { Timestamp } from "firebase-admin/firestore";
 import { financeOrder, summarizeFinance, wibRange, type FinanceRow } from "@/lib/finance";
 import { commerceServices } from "@/lib/server/commerce";
@@ -15,6 +14,7 @@ export async function GET(request: Request) {
 
   try {
     const { app, db } = commerceServices();
+    const { getAuth } = await import("firebase-admin/auth");
     const user = await getAuth(app).verifyIdToken(bearer.slice(7), true).catch(() => null);
     if (!user || !/^[A-Za-z0-9_-]{1,128}$/.test(user.uid)) return json({ error: "Masuk sebagai admin." }, 401);
     if (!(await db.collection("market_admins").doc(user.uid).get()).exists) return json({ error: "Akses admin diperlukan." }, 403);
